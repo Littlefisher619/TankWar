@@ -16,6 +16,7 @@ class EntityGroup(object):
         self.enemy_bullets = pygame.sprite.Group()
         self.foods = pygame.sprite.Group()
 
+
     def update(self, scene_elements, home):
         # 更新并画我方子弹
         for bullet in self.player_bullets:
@@ -63,6 +64,7 @@ class GameLevel(Interface):
         self.__panel_width = config.PANEL_WIDTH
 
 
+
     def _init_text(self):
         color_white = (255, 255, 255)
         self.__fix_text_tips = {
@@ -101,19 +103,25 @@ class GameLevel(Interface):
     def __dispatch_player_operation(self):
         key_pressed = pygame.key.get_pressed()
         key_maps = {
-            self.__tank_player1: {
-                pygame.K_w: 'up',
-                pygame.K_s: 'down',
-                pygame.K_a: 'left',
-                pygame.K_d: 'right'
+            'dir':{
+                self.__tank_player1: {
+                    pygame.K_w: 'up',
+                    pygame.K_s: 'down',
+                    pygame.K_a: 'left',
+                    pygame.K_d: 'right'
+                },
+                self.__tank_player2: {
+                    pygame.K_UP: 'up',
+                    pygame.K_DOWN: 'down',
+                    pygame.K_LEFT: 'left',
+                    pygame.K_RIGHT: 'right'
+                },
+            },
+            'fire':{
+                self.__tank_player1: pygame.K_SPACE,
+                self.__tank_player2: pygame.K_KP0,
+            },
 
-            },
-            self.__tank_player2: {
-                pygame.K_UP: 'up',
-                pygame.K_DOWN: 'down',
-                pygame.K_LEFT: 'left',
-                pygame.K_RIGHT: 'right'
-            },
         }
 
         # 玩家一, WSAD移动, 空格键射击
@@ -124,7 +132,7 @@ class GameLevel(Interface):
             player_tank_list.append(self.__tank_player2)
 
         for tank in player_tank_list:
-            for key, dir in key_maps[tank].items():
+            for key, dir in key_maps['dir'][tank].items():
                 if key_pressed[key]:
                     self.__entities.player_tanks.remove(tank)
                     tank.move(dir, self.__scene_elements, self.__entities.player_tanks,
@@ -132,7 +140,7 @@ class GameLevel(Interface):
                     self.__entities.player_tanks.add(tank)
                     break
 
-            if key_pressed[pygame.K_SPACE]:
+            if key_pressed[key_maps['fire'][tank]]:
                 bullet = tank.shoot()
                 if bullet:
                     self.__play_sound('fire') if tank.tanklevel < 2 else self.__play_sound('Gunfire')
@@ -218,7 +226,7 @@ class GameLevel(Interface):
 
         if collision_results['sprite']['PlayerBulletWithHome'] or collision_results['sprite']['EnemyBulletWithHome']:
             self.__is_win_flag = False
-            self.__is_running = False
+            self.__has_next_loop = False
             self.__play_sound('bang')
             self.__home.setDead()
 
@@ -244,7 +252,7 @@ class GameLevel(Interface):
 
     def _main_loop(self):
         clock = pygame.time.Clock()
-        while self.__is_running:
+        while self.__has_next_loop:
             # 用户事件捕捉
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -276,11 +284,11 @@ class GameLevel(Interface):
             # 我方坦克都挂了
             if len(self.__entities.player_tanks) == 0:
                 self.__is_win_flag = False
-                self.__is_running = False
+                self.__has_next_loop = False
             # 敌方坦克都挂了
             if self.__total_enemy_num <= 0:
                 self.__is_win_flag = True
-                self.__is_running = False
+                self.__has_next_loop = False
 
             clock.tick(60)
 
@@ -304,20 +312,7 @@ class GameLevel(Interface):
             }
         }
 
-    def show(self):
-        self._init_game_window()
-        self.__load_level_file()
-        self._init_text()
-        self.__entities = EntityGroup()
-
-
-        # 定义敌方坦克生成事件
-        self.__generate_enemies_event = pygame.constants.USEREVENT
-        pygame.time.set_timer(self.__generate_enemies_event, 20000)
-        # 我方大本营
-        self.__home = Home(position=self.__home_position, imagepaths=self.__home_images)
-        # 我方坦克
-
+    def __init_tanks(self):
         self.__tank_player1 = PlayerTank('player1', position=self.__player_spawn_point[0],
                                          player_tank_image_paths=self.__player_tank_images,
                                          border_len=self.__border_len,
@@ -346,26 +341,39 @@ class GameLevel(Interface):
                                                       bullet_image_paths=self.__bullet_images,
                                                       food_image_paths=self.__food_images,
                                                       boom_image_path=self.__other_images.get('boom_static')))
-        # 游戏开始音乐
+    def __init_home(self):
+        self.__home = Home(position=self.__home_position, imagepaths=self.__home_images)
+
+    def __init_user_event(self):
+        self.__generate_enemies_event = pygame.constants.USEREVENT
+        pygame.time.set_timer(self.__generate_enemies_event, 20000)
+
+    def __init_entities(self):
+        self.__entities = EntityGroup()
+
+    def show(self):
+        self._init_game_window()
+        self._init_text()
+        self.__load_level_file()
+        self.__init_entities()
+        self.__init_user_event()
+        self.__init_home()
+        self.__init_tanks()
         self.__init_collision_config()
         self.__play_sound('start')
-
-        # 该关卡通过与否的flags
         self.__is_win_flag = False
-        self.__is_running = True
-        # 游戏主循环
+        self.__has_next_loop = True
         self._main_loop()
-
         self._getGameInstance().setIsWin(self.__is_win_flag)
 
-    '''显示游戏面板'''
 
+    '''显示游戏面板'''
     def __draw_game_panel(self):
         color_white = (255, 255, 255)
         dynamic_text_tips = {
             16: {'text': 'Life: %s' % self.__tank_player1.num_lifes},
             17: {'text': 'TLevel: %s' % self.__tank_player1.tanklevel},
-            23: {'text': 'Game Level: %s' % self._getGameInstance().getLevel()},
+            23: {'text': 'Game Level: %s' % (self._getGameInstance().getLevel() + 1)},
             24: {'text': 'Remain Enemy: %s' % self.__total_enemy_num}
         }
         if self.__tank_player2:
