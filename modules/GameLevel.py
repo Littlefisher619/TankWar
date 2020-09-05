@@ -6,7 +6,6 @@ from modules.sprites.tanks import *
 from modules.sprites.scenes import *
 
 
-
 '''用于运行某一游戏关卡'''
 class GameLevel():
 	def __init__(self, gamelevel, levelfilepath, sounds, is_dual_mode, cfg, **kwargs):
@@ -42,7 +41,7 @@ class GameLevel():
 	def start(self, screen):
 		screen = pygame.display.set_mode((self.width+self.panel_width, self.height))
 		# 背景图片
-		background_img =pygame.image.load(config.OTHER_IMAGE_PATHS.get('background'))
+		background_img = pygame.image.load(self.other_image_paths.get('background'))
 		# 定义精灵组
 		player_tanks_group = pygame.sprite.Group()
 		enemy_tanks_group = pygame.sprite.Group()
@@ -261,7 +260,6 @@ class GameLevel():
 			clock.tick(60)
 		screen = pygame.display.set_mode((self.width, self.height))
 		return is_win
-
 	'''显示游戏面板'''
 	def __showGamePanel(self, screen, tank_player1, tank_player2=None):
 		color_white = (255, 255, 255)

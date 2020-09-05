@@ -20,7 +20,7 @@ class SwitchLevelInterface(Interface):
 	def _init_text(self):
 		config = self._getGameConfig()
 		self.__font_render = self.__font.render(
-			'LEVEL%d' % (self._getGameInstance().level + 1),
+			'LEVEL%d' % (self._getGameInstance().getLevel() + 1),
 			True,
 			(255, 255, 255) # White
 		)

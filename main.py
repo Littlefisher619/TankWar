@@ -2,7 +2,6 @@
 import config
 import pygame
 import os
-from modules import *
 from TankGame import TankGame
 
 game_instance = None
