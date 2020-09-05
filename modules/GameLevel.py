@@ -140,10 +140,11 @@ class GameLevel(Interface):
 
     def __dispatch_food_effect(self, food, player_tank):
         self.__play_sound('add')
+
         if food.name == 'boom':
             for _ in self.__entities.enemy_tanks:
                 self.__play_sound('bang')
-            self.total_enemy_num -= len(self.__entities.enemy_tanks)
+            self.__total_enemy_num -= len(self.__entities.enemy_tanks)
             self.__entities.enemy_tanks = pygame.sprite.Group()
         elif food.name == 'clock':
             for enemy_tank in self.__entities.enemy_tanks:
@@ -151,7 +152,8 @@ class GameLevel(Interface):
         elif food.name == 'gun':
             player_tank.improveTankLevel()
         elif food.name == 'iron':
-            self.__pretectHome()
+            for x, y in self.__home_walls_position:
+                self.__scene_elements['iron_group'].add(Iron((x, y), self.__scene_images.get('iron')))
         elif food.name == 'protect':
             player_tank.setProtected()
         elif food.name == 'star':
@@ -159,31 +161,53 @@ class GameLevel(Interface):
             player_tank.improveTankLevel()
         elif food.name == 'tank':
             player_tank.addLife()
+
         self.__entities.foods.remove(food)
 
     def __dispatch_collisions(self):
-        # --子弹和砖墙
-        pygame.sprite.groupcollide(self.__entities.player_bullets, self.__scene_elements.get('brick_group'), True, True)
-        pygame.sprite.groupcollide(self.__entities.enemy_bullets, self.__scene_elements.get('brick_group'), True, True)
-        # --子弹和铁墙
+        collision_results = {
+            'group': {},
+            'sprite': {},
+            'foreach_sprite': {},
+        }
+        for (collision, args) in self.__collisions['group'].items():
+            collision_results['group'][collision] = pygame.sprite.groupcollide(*args)
+
+        for (collision, args) in self.__collisions['sprite'].items():
+            collision_results['sprite'][collision] = pygame.sprite.spritecollide(*args)
+
+        for (collision, args) in self.__collisions['foreach_sprite'].items():
+            arg_list = list(args)
+            sprite_list = arg_list[0]
+            for sprite in sprite_list:
+                arg_list[0] = sprite
+                args = tuple(arg_list)
+                collision_results['foreach_sprite'][sprite] = pygame.sprite.spritecollide(*args)
+
         for bullet in self.__entities.player_bullets:
-            if pygame.sprite.spritecollide(bullet, self.__scene_elements.get('iron_group'), bullet.is_stronger, None):
+            collision_result = pygame.sprite.spritecollide(bullet, self.__scene_elements.get('iron_group'), bullet.is_stronger, None)
+            if collision_result:
                 self.__entities.player_bullets.remove(bullet)
-        pygame.sprite.groupcollide(self.__entities.enemy_bullets, self.__scene_elements.get('iron_group'), True, False)
-        # --子弹撞子弹
-        pygame.sprite.groupcollide(self.__entities.player_bullets, self.__entities.enemy_bullets, True, True)
+
+        for player_tank in self.__entities.player_tanks:
+            for food in self.__entities.foods:
+                collision_result = pygame.sprite.collide_rect(player_tank, food)
+                if collision_result:
+                    self.__dispatch_food_effect(food, player_tank)
+
         # --我方子弹撞敌方坦克
         for tank in self.__entities.enemy_tanks:
-            if pygame.sprite.spritecollide(tank, self.__entities.player_bullets, True, None):
+            if collision_results['foreach_sprite'][tank]:
                 if tank.food:
                     self.__entities.foods.add(tank.food)
                     tank.food = None
                 if tank.decreaseTankLevel():
                     self.__play_sound('bang')
-                    self.total_enemy_num -= 1
+                    self.__total_enemy_num -= 1
+
         # --敌方子弹撞我方坦克
         for tank in self.__entities.player_tanks:
-            if pygame.sprite.spritecollide(tank, self.__entities.enemy_bullets, True, None):
+            if collision_results['foreach_sprite'][tank]:
                 if tank.is_protected:
                     self.__play_sound('blast')
                 else:
@@ -192,27 +216,14 @@ class GameLevel(Interface):
                     if tank.num_lifes < 0:
                         self.__entities.player_tanks.remove(tank)
 
-        # --我方子弹撞我方大本营
-        if pygame.sprite.spritecollide(self.__home, self.__entities.player_bullets, True, None):
+        if collision_results['sprite']['PlayerBulletWithHome'] or collision_results['sprite']['EnemyBulletWithHome']:
             self.__is_win_flag = False
             self.__is_running = False
+            self.__play_sound('bang')
             self.__home.setDead()
-        # --敌方子弹撞我方大本营
-        if pygame.sprite.spritecollide(self.__home, self.__entities.enemy_bullets, True, None):
-            self.__is_win_flag = False
-            self.__is_running = False
-            self.__home.setDead()
-        # --我方坦克在植物里
 
-        # if pygame.sprite.groupcollide(self.__entities.player_tanks, self.__scene_elements.get('tree_group'), False,
-        #                               False):
-        #     self.__play_sound('hit')
-
-        # --我方坦克吃到食物
-        for player_tank in self.__entities.player_tanks:
-            for food in self.__entities.foods:
-                if pygame.sprite.collide_rect(player_tank, food):
-                    self.__dispatch_food_effect(food, player_tank)
+        if collision_results['group']['PlayerTankWithTree']:
+            self.__play_sound('hit')
 
     def _draw_interface(self):
         screen = self._getGameInstance().getScreen()
@@ -242,8 +253,8 @@ class GameLevel(Interface):
                 # --敌方坦克生成
                 elif event.type == self.__generate_enemies_event:
                     if self.max_enemy_num > len(self.__entities.enemy_tanks):
-                        for position in self.enemy_tank_positions:
-                            if len(self.__entities.enemy_tanks) == self.total_enemy_num:
+                        for position in self.__enemy_spawn_point:
+                            if len(self.__entities.enemy_tanks) == self.__total_enemy_num:
                                 break
                             enemy_tank = EnemyTank(enemy_tank_image_paths=self.__enemy_tank_images,
                                                    appear_image_path=self.__other_images.get('appear'),
@@ -267,11 +278,31 @@ class GameLevel(Interface):
                 self.__is_win_flag = False
                 self.__is_running = False
             # 敌方坦克都挂了
-            if self.total_enemy_num <= 0:
+            if self.__total_enemy_num <= 0:
                 self.__is_win_flag = True
                 self.__is_running = False
 
             clock.tick(60)
+
+    def __init_collision_config(self):
+        self.__collisions = {
+            'group': {
+                'PlayerBulletWithBrick': (self.__entities.player_bullets, self.__scene_elements.get('brick_group'), True, True),
+                'EnemyBulletWithBrick': (self.__entities.enemy_bullets, self.__scene_elements.get('brick_group'), True, True),
+                'EnemyBulletWithIron': (self.__entities.enemy_bullets, self.__scene_elements.get('iron_group'), True, False),
+                'BulletWithBullet': (self.__entities.player_bullets, self.__entities.enemy_bullets, True, True),
+                'PlayerTankWithTree': (self.__entities.player_tanks, self.__scene_elements.get('tree_group'), False, False),
+            },
+            'sprite': {
+                'EnemyBulletWithHome': (self.__home, self.__entities.enemy_bullets, True, None),
+                'PlayerBulletWithHome': (self.__home, self.__entities.player_bullets, True, None),
+
+            },
+            'foreach_sprite': {
+                'PlayerTankWithEnemyBullet': (self.__entities.player_tanks, self.__entities.enemy_bullets, True, None),
+                'EnemyTankWithPlayerBullet': (self.__entities.enemy_tanks, self.__entities.player_bullets, True, None),
+            }
+        }
 
     def show(self):
         self._init_game_window()
@@ -279,14 +310,15 @@ class GameLevel(Interface):
         self._init_text()
         self.__entities = EntityGroup()
 
+
         # 定义敌方坦克生成事件
         self.__generate_enemies_event = pygame.constants.USEREVENT
         pygame.time.set_timer(self.__generate_enemies_event, 20000)
         # 我方大本营
-        self.__home = Home(position=self.home_position, imagepaths=self.__home_images)
+        self.__home = Home(position=self.__home_position, imagepaths=self.__home_images)
         # 我方坦克
 
-        self.__tank_player1 = PlayerTank('player1', position=self.player_tank_positions[0],
+        self.__tank_player1 = PlayerTank('player1', position=self.__player_spawn_point[0],
                                          player_tank_image_paths=self.__player_tank_images,
                                          border_len=self.__border_len,
                                          screensize=[self.__screen_width, self.__screen_height],
@@ -297,7 +329,7 @@ class GameLevel(Interface):
 
         self.__tank_player2 = None
         if self._getGameInstance().getMultiPlayerMode():
-            self.__tank_player2 = PlayerTank('player2', position=self.player_tank_positions[1],
+            self.__tank_player2 = PlayerTank('player2', position=self.__player_spawn_point[1],
                                              player_tank_image_paths=self.__player_tank_images,
                                              border_len=self.__border_len,
                                              screensize=[self.__screen_width, self.__screen_height],
@@ -306,7 +338,7 @@ class GameLevel(Interface):
                                              boom_image_path=self.__other_images.get('boom_static'))
             self.__entities.player_tanks.add(self.__tank_player2)
         # 敌方坦克
-        for position in self.enemy_tank_positions:
+        for position in self.__enemy_spawn_point:
             self.__entities.enemy_tanks.add(EnemyTank(enemy_tank_image_paths=self.__enemy_tank_images,
                                                       appear_image_path=self.__other_images.get('appear'),
                                                       position=position, border_len=self.__border_len,
@@ -315,6 +347,7 @@ class GameLevel(Interface):
                                                       food_image_paths=self.__food_images,
                                                       boom_image_path=self.__other_images.get('boom_static')))
         # 游戏开始音乐
+        self.__init_collision_config()
         self.__play_sound('start')
 
         # 该关卡通过与否的flags
@@ -333,7 +366,7 @@ class GameLevel(Interface):
             16: {'text': 'Life: %s' % self.__tank_player1.num_lifes},
             17: {'text': 'TLevel: %s' % self.__tank_player1.tanklevel},
             23: {'text': 'Game Level: %s' % self._getGameInstance().getLevel()},
-            24: {'text': 'Remain Enemy: %s' % self.total_enemy_num}
+            24: {'text': 'Remain Enemy: %s' % self.__total_enemy_num}
         }
         if self.__tank_player2:
             dynamic_text_tips[20] = {'text': 'Life: %s' % self.__tank_player2.num_lifes}
@@ -353,13 +386,6 @@ class GameLevel(Interface):
         for pos, tip in dynamic_text_tips.items():
             screen.blit(tip['render'], tip['rect'])
 
-    '''保护大本营'''
-
-    def __pretectHome(self):
-        for x, y in self.home_around_positions:
-            self.__scene_elements['iron_group'].add(Iron((x, y), self.__scene_images.get('iron')))
-
-    '''解析关卡文件'''
 
     def __load_level_file(self):
         self.__scene_elements = {
@@ -378,40 +404,40 @@ class GameLevel(Interface):
                 continue
             # 敌方坦克总数量
             elif line.startswith('%TOTALENEMYNUM'):
-                self.total_enemy_num = int(line.split(':')[-1])
+                self.__total_enemy_num = int(line.split(':')[-1])
             # 场上敌方坦克最大数量
             elif line.startswith('%MAXENEMYNUM'):
                 self.max_enemy_num = int(line.split(':')[-1])
             # 大本营位置
             elif line.startswith('%HOMEPOS'):
-                self.home_position = line.split(':')[-1]
-                self.home_position = [int(self.home_position.split(',')[0]), int(self.home_position.split(',')[1])]
-                self.home_position = (self.__border_len + self.home_position[0] * self.__grid_size,
-                                      self.__border_len + self.home_position[1] * self.__grid_size)
+                self.__home_position = line.split(':')[-1]
+                self.__home_position = [int(self.__home_position.split(',')[0]), int(self.__home_position.split(',')[1])]
+                self.__home_position = (self.__border_len + self.__home_position[0] * self.__grid_size,
+                                        self.__border_len + self.__home_position[1] * self.__grid_size)
             # 大本营周围位置
             elif line.startswith('%HOMEAROUNDPOS'):
-                self.home_around_positions = line.split(':')[-1]
-                self.home_around_positions = [[int(pos.split(',')[0]), int(pos.split(',')[1])] for pos in
-                                              self.home_around_positions.split(' ')]
-                self.home_around_positions = [
+                self.__home_walls_position = line.split(':')[-1]
+                self.__home_walls_position = [[int(pos.split(',')[0]), int(pos.split(',')[1])] for pos in
+                                              self.__home_walls_position.split(' ')]
+                self.__home_walls_position = [
                     (self.__border_len + pos[0] * self.__grid_size, self.__border_len + pos[1] * self.__grid_size) for
-                    pos in self.home_around_positions]
+                    pos in self.__home_walls_position]
             # 我方坦克初始位置
             elif line.startswith('%PLAYERTANKPOS'):
-                self.player_tank_positions = line.split(':')[-1]
-                self.player_tank_positions = [[int(pos.split(',')[0]), int(pos.split(',')[1])] for pos in
-                                              self.player_tank_positions.split(' ')]
-                self.player_tank_positions = [
+                self.__player_spawn_point = line.split(':')[-1]
+                self.__player_spawn_point = [[int(pos.split(',')[0]), int(pos.split(',')[1])] for pos in
+                                             self.__player_spawn_point.split(' ')]
+                self.__player_spawn_point = [
                     (self.__border_len + pos[0] * self.__grid_size, self.__border_len + pos[1] * self.__grid_size) for
-                    pos in self.player_tank_positions]
+                    pos in self.__player_spawn_point]
             # 敌方坦克初始位置
             elif line.startswith('%ENEMYTANKPOS'):
-                self.enemy_tank_positions = line.split(':')[-1]
-                self.enemy_tank_positions = [[int(pos.split(',')[0]), int(pos.split(',')[1])] for pos in
-                                             self.enemy_tank_positions.split(' ')]
-                self.enemy_tank_positions = [
+                self.__enemy_spawn_point = line.split(':')[-1]
+                self.__enemy_spawn_point = [[int(pos.split(',')[0]), int(pos.split(',')[1])] for pos in
+                                            self.__enemy_spawn_point.split(' ')]
+                self.__enemy_spawn_point = [
                     (self.__border_len + pos[0] * self.__grid_size, self.__border_len + pos[1] * self.__grid_size) for
-                    pos in self.enemy_tank_positions]
+                    pos in self.__enemy_spawn_point]
             # 地图元素
             else:
                 num_row += 1
