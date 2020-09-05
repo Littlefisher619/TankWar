@@ -1,0 +1,4 @@
+from modules.GameLevel import GameLevel
+from .GameStartInterface import GameStartInterface
+from .GameOverInterface import GameOverInterface
+from .SwitchLevelInterface import SwitchLevelInterface
