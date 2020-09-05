@@ -245,6 +245,7 @@ class EnemyTank(pygame.sprite.Sprite):
 		# 坦克等级
 		self.tanklevel = random.randint(0, len(self.enemy_tank_image_paths)-2)
 		self.food = None
+
 		if (random.random() >= 0.6) and (self.tanklevel == len(self.enemy_tank_image_paths)-2):
 			self.tanklevel += 1
 			self.food = Foods(food_image_paths=food_image_paths, screensize=self.screensize)

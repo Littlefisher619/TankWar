@@ -35,7 +35,7 @@ class TankGame(object):
         return self.__level
 
     def getLevelFile(self):
-        return self.__level_file
+        return self.__levels[self.__level]
 
     def getIsWin(self):
         return self.__is_win
@@ -52,12 +52,13 @@ class TankGame(object):
     def __showInterface(self, interface):
         self.__interfaces[interface].show()
 
-    def __init_game_window(self):
-        config = self.getConfig()
-        pygame.init()
-        pygame.mixer.init()
-        self.__screen = pygame.display.set_mode((config.WIDTH, config.HEIGHT))
-        pygame.display.set_caption(config.TITLE)
+    def init_game_window(self, size_tuple=None):
+        if size_tuple is None:
+            self.__screen = pygame.display.set_mode(
+                (self.getConfig().WIDTH, self.getConfig().HEIGHT)
+            )
+        else:
+            self.__screen = pygame.display.set_mode(size_tuple)
 
     def __init_sounds(self):
         for sound, file in self.getConfig().AUDIO_PATHS.items():
@@ -75,15 +76,11 @@ class TankGame(object):
     def __enter_loop(self):
         self.__showInterface('GameStart')
         while True:
-            for level, level_file in enumerate(self.__levels):
+            for level in range(len(self.__levels)):
                 self.__level = level
                 self.__showInterface('SwitchLevel')
-                self.__level_file = level_file
-
-                game_level = GameLevel(level + 1, level_file, self.__sounds, self.__multiplayer_mode, self.getConfig())
-
-                self.__is_win = game_level.start(self.__screen)
-                if not self.__is_win:
+                self.__showInterface('GameLevel')
+                if not self.getIsWin():
                     break
 
             self.__showInterface('GameOver')
@@ -94,11 +91,15 @@ class TankGame(object):
         self.__interfaces = {
             'SwitchLevel': SwitchLevelInterface(self),
             'GameOver': GameOverInterface(self),
-            'GameStart': GameStartInterface(self)
+            'GameStart': GameStartInterface(self),
+            'GameLevel': GameLevel(self),
         }
 
     def __init_game(self):
-        self.__init_game_window()
+        pygame.init()
+        pygame.mixer.init()
+        pygame.display.set_caption(self.getConfig().TITLE)
+        self.init_game_window()
         self.__init_sounds()
         self.__load_levels()
 

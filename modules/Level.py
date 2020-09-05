@@ -98,10 +98,10 @@ class Level(Interface):
             tip['rect'] = tip['render'].get_rect()
             tip['rect'].left, tip['rect'].top = self.__screen_width + 5, self.__screen_height * pos / 30
 
-        for tip in self.__fix_text_tips.items():
+        for pos, tip in self.__fix_text_tips.items():
             screen.blit(tip['render'], tip['rect'])
 
-        for tip in text_tips.items():
+        for pos, tip in text_tips.items():
             screen.blit(tip['render'], tip['rect'])
 
     def _init_text(self):

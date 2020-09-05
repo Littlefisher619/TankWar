@@ -7,6 +7,9 @@ class Interface(object):
         self._init_resources()
         self._init_logo()
 
+    def _init_game_window(self):
+        self._getGameInstance().init_game_window()
+
     def _getGameInstance(self):
         return self.__game_instance
 
@@ -41,6 +44,7 @@ class Interface(object):
         pass
 
     def show(self):
+        self._init_game_window()
         self._init_text()
         self._init_bottons()
         self._main_loop()
