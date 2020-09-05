@@ -1,8 +1,8 @@
 import pygame
 import sys
 import os
-from interfaces import *
-from GameLevel import GameLevel
+from .interfaces import *
+from .GameLevel import GameLevel
 
 
 class TankGame(object):

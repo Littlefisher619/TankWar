@@ -5,7 +5,7 @@ from modules.sprites.home import *
 from modules.sprites.tanks import *
 from modules.sprites.scenes import *
 from enum import Enum
-from interfaces.Interface import Interface
+from .interfaces.Interface import Interface
 
 
 class EntityGroup(object):
