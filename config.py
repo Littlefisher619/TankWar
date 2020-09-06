@@ -64,7 +64,7 @@ OTHER_IMAGE_PATHS = {
     'mask': os.path.join(os.getcwd(), 'resources/images/others/mask.png'),
     'protect': os.path.join(os.getcwd(), 'resources/images/others/protect.png'),
     'tip': os.path.join(os.getcwd(), 'resources/images/others/tip.png'),
-    '__loadbar': os.path.join(os.getcwd(), 'resources/images/others/gamebar.png')
+    'loadbar': os.path.join(os.getcwd(), 'resources/images/others/gamebar.png')
 }
 '''声音'''
 AUDIO_PATHS = {

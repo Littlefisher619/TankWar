@@ -138,6 +138,7 @@ class GameLevel(Interface):
                     self.__entities.player_tanks.remove(tank)
                     tank.move(dir, self.__scene_elements, self.__entities.player_tanks,
                               self.__entities.enemy_tanks, self.__home)
+                    tank.roll()
                     self.__entities.player_tanks.add(tank)
                     break
 
@@ -164,7 +165,7 @@ class GameLevel(Interface):
             for x, y in self.__home_walls_position:
                 self.__scene_elements['iron_group'].add(Iron((x, y), self.__scene_images.get('iron')))
         elif food.name == 'protect':
-            player_tank.set_protected()
+            player_tank.protected = True
         elif food.name == 'star':
             player_tank.improve_level()
             player_tank.improve_level()
@@ -194,7 +195,7 @@ class GameLevel(Interface):
                 collision_results['foreach_sprite'][sprite] = pygame.sprite.spritecollide(*args)
 
         for bullet in self.__entities.player_bullets:
-            collision_result = pygame.sprite.spritecollide(bullet, self.__scene_elements.get('iron_group'), bullet.is_stronger, None)
+            collision_result = pygame.sprite.spritecollide(bullet, self.__scene_elements.get('iron_group'), bullet.enhanced, None)
             if collision_result:
                 self.__entities.player_bullets.remove(bullet)
 
@@ -217,7 +218,7 @@ class GameLevel(Interface):
         # --敌方子弹撞我方坦克
         for tank in self.__entities.player_tanks:
             if collision_results['foreach_sprite'][tank]:
-                if tank.is_protected:
+                if tank.protected:
                     self.__play_sound('blast')
                 else:
                     if tank.decrease_level():
@@ -229,7 +230,7 @@ class GameLevel(Interface):
             self.__is_win_flag = False
             self.__has_next_loop = False
             self.__play_sound('bang')
-            self.__home.setDead()
+            self.__home.destroyed = True
 
         if collision_results['group']['PlayerTankWithTree']:
             self.__play_sound('hit')
@@ -241,10 +242,12 @@ class GameLevel(Interface):
 
         self.__entities.player_bullets.draw(screen)
         self.__entities.enemy_bullets.draw(screen)
-        self.__entities.player_tanks.draw(screen)
         self.__entities.enemy_tanks.draw(screen)
         for key, value in self.__scene_elements.items():
             value.draw(screen)
+        for tank in self.__entities.player_tanks:
+            tank.update()
+            tank.draw(screen)
         self.__home.draw(screen)
         self.__entities.foods.draw(screen)
         self.__draw_game_panel()
@@ -255,6 +258,7 @@ class GameLevel(Interface):
         # cheat for test
         self.__tank_player1.improve_level()
         self.__tank_player1.improve_level()
+        self.__tank_player1.protected = True
         while self.__has_next_loop:
             # 用户事件捕捉
             for event in pygame.event.get():
@@ -267,7 +271,7 @@ class GameLevel(Interface):
                         for position in self.__enemy_spawn_point:
                             if len(self.__entities.enemy_tanks) == self.__total_enemy_num:
                                 break
-                            enemy_tank = EnemyTank(position=position, game_instance=self._game_instance)
+                            enemy_tank = EnemyTank(position=position, config=self._game_config)
                             if (
                             not pygame.sprite.spritecollide(enemy_tank, self.__entities.enemy_tanks, False, None)) and (
                             not pygame.sprite.spritecollide(enemy_tank, self.__entities.player_tanks, False, None)):
@@ -310,18 +314,18 @@ class GameLevel(Interface):
         }
 
     def __init_tanks(self):
-        self.__tank_player1 = PlayerTank('player1', position=self.__player_spawn_point[0], game_instance=self._game_instance)
+        self.__tank_player1 = PlayerTank('player1', position=self.__player_spawn_point[0], game_config=self._game_config)
         self.__entities.player_tanks.add(self.__tank_player1)
 
         self.__tank_player2 = None
         if self._game_instance.multiplayer_mode:
-            self.__tank_player2 = PlayerTank('player2', position=self.__player_spawn_point[1], game_instance=self._game_instance)
+            self.__tank_player2 = PlayerTank('player2', position=self.__player_spawn_point[1], game_config=self._game_config)
             self.__entities.player_tanks.add(self.__tank_player2)
         # 敌方坦克
         for position in self.__enemy_spawn_point:
-            self.__entities.enemy_tanks.add(EnemyTank(position=position, game_instance=self._game_instance))
+            self.__entities.enemy_tanks.add(EnemyTank(position=position, config=self._game_config))
     def __init_home(self):
-        self.__home = Home(position=self.__home_position, imagepaths=self.__home_images)
+        self.__home = Home(position=self.__home_position, imagefile=self.__home_images)
 
     def __init_user_event(self):
         self.__generate_enemies_event = pygame.constants.USEREVENT
