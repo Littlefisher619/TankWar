@@ -324,6 +324,7 @@ class GameLevel(Interface):
         # 敌方坦克
         for position in self.__enemy_spawn_point:
             self.__entities.enemy_tanks.add(EnemyTank(position=position, config=self._game_config))
+
     def __init_home(self):
         self.__home = Home(position=self.__home_position, imagefile=self.__home_images)
 
@@ -462,7 +463,6 @@ class GameLevel(Interface):
                             Iron(position, self.__scene_images.get('iron'))
                         )
                     elif elem == 'R':
-                        print(position)
                         self.__scene_elements['river_group'].add(
                             River(position, self.__scene_images.get(random.choice(['river1', 'river2'])))
                         )
