@@ -4,10 +4,10 @@ import os
 FONTPATH = os.path.join(os.getcwd(), 'resources/font/font.ttf')
 '''图片'''
 BULLET_IMAGE_PATHS = {
-    'up': os.path.join(os.getcwd(), 'resources/images/bullet/bullet_up.png'),
-    'down': os.path.join(os.getcwd(), 'resources/images/bullet/bullet_down.png'),
-    'left': os.path.join(os.getcwd(), 'resources/images/bullet/bullet_left.png'),
-    'right': os.path.join(os.getcwd(), 'resources/images/bullet/bullet_right.png')
+    (0, -1): os.path.join(os.getcwd(), 'resources/images/bullet/bullet_up.png'),
+    (0, 1): os.path.join(os.getcwd(), 'resources/images/bullet/bullet_down.png'),
+    (-1, 0): os.path.join(os.getcwd(), 'resources/images/bullet/bullet_left.png'),
+    (1, 0): os.path.join(os.getcwd(), 'resources/images/bullet/bullet_right.png')
 }
 ENEMY_TANK_IMAGE_PATHS = {
     '1': [os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_1_0.png'),

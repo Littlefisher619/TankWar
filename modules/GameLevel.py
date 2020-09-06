@@ -7,6 +7,7 @@ from modules.sprites.scenes import *
 from enum import Enum
 from .interfaces.Interface import Interface
 
+from .sprites.tanks import DIRECTION
 
 class EntityGroup(object):
     def __init__(self):
@@ -51,8 +52,8 @@ class GameLevel(Interface):
         self.__scene_images = config.SCENE_IMAGE_PATHS
         self.__other_images = config.OTHER_IMAGE_PATHS
         self.__player_tank_images = config.PLAYER_TANK_IMAGE_PATHS
-        self.__bullet_images = config.BULLET_IMAGE_PATHS
-        self.__enemy_tank_images = config.ENEMY_TANK_IMAGE_PATHS
+        # self.__bullet_images = config.BULLET_IMAGE_PATHS
+        # self.__enemy_tank_images = config.ENEMY_TANK_IMAGE_PATHS
         self.__food_images = config.FOOD_IMAGE_PATHS
         self.__home_images = config.HOME_IMAGE_PATHS
         self.__background_img = pygame.image.load(self.__other_images.get('background'))
@@ -103,21 +104,21 @@ class GameLevel(Interface):
     def __dispatch_player_operation(self):
         key_pressed = pygame.key.get_pressed()
         key_maps = {
-            'dir':{
+            'dir': {
                 self.__tank_player1: {
-                    pygame.K_w: 'up',
-                    pygame.K_s: 'down',
-                    pygame.K_a: 'left',
-                    pygame.K_d: 'right'
+                    pygame.K_w: DIRECTION.UP,
+                    pygame.K_s: DIRECTION.DOWN,
+                    pygame.K_a: DIRECTION.LEFT,
+                    pygame.K_d: DIRECTION.RIGHT,
                 },
                 self.__tank_player2: {
-                    pygame.K_UP: 'up',
-                    pygame.K_DOWN: 'down',
-                    pygame.K_LEFT: 'left',
-                    pygame.K_RIGHT: 'right'
+                    pygame.K_UP: DIRECTION.UP,
+                    pygame.K_DOWN: DIRECTION.DOWN,
+                    pygame.K_LEFT: DIRECTION.LEFT,
+                    pygame.K_RIGHT: DIRECTION.RIGHT,
                 },
             },
-            'fire':{
+            'fire': {
                 self.__tank_player1: pygame.K_SPACE,
                 self.__tank_player2: pygame.K_KP0,
             },
@@ -143,7 +144,7 @@ class GameLevel(Interface):
             if key_pressed[key_maps['fire'][tank]]:
                 bullet = tank.shoot()
                 if bullet:
-                    self.__play_sound('fire') if tank.tanklevel < 2 else self.__play_sound('Gunfire')
+                    self.__play_sound('fire') if tank._level < 2 else self.__play_sound('Gunfire')
                     self.__entities.player_bullets.add(bullet)
 
     def __dispatch_food_effect(self, food, player_tank):
@@ -156,19 +157,19 @@ class GameLevel(Interface):
             self.__entities.enemy_tanks = pygame.sprite.Group()
         elif food.name == 'clock':
             for enemy_tank in self.__entities.enemy_tanks:
-                enemy_tank.setStill()
+                enemy_tank.set_still()
         elif food.name == 'gun':
-            player_tank.improveTankLevel()
+            player_tank.improve_level()
         elif food.name == 'iron':
             for x, y in self.__home_walls_position:
                 self.__scene_elements['iron_group'].add(Iron((x, y), self.__scene_images.get('iron')))
         elif food.name == 'protect':
-            player_tank.setProtected()
+            player_tank.set_protected()
         elif food.name == 'star':
-            player_tank.improveTankLevel()
-            player_tank.improveTankLevel()
+            player_tank.improve_level()
+            player_tank.improve_level()
         elif food.name == 'tank':
-            player_tank.addLife()
+            player_tank.add_life()
 
         self.__entities.foods.remove(food)
 
@@ -209,7 +210,7 @@ class GameLevel(Interface):
                 if tank.food:
                     self.__entities.foods.add(tank.food)
                     tank.food = None
-                if tank.decreaseTankLevel():
+                if tank.decrease_level():
                     self.__play_sound('bang')
                     self.__total_enemy_num -= 1
 
@@ -219,7 +220,7 @@ class GameLevel(Interface):
                 if tank.is_protected:
                     self.__play_sound('blast')
                 else:
-                    if tank.decreaseTankLevel():
+                    if tank.decrease_level():
                         self.__play_sound('bang')
                     if tank.num_lifes < 0:
                         self.__entities.player_tanks.remove(tank)
@@ -252,8 +253,8 @@ class GameLevel(Interface):
     def _main_loop(self):
         clock = pygame.time.Clock()
         # cheat for test
-        self.__tank_player1.improveTankLevel()
-        self.__tank_player1.improveTankLevel()
+        self.__tank_player1.improve_level()
+        self.__tank_player1.improve_level()
         while self.__has_next_loop:
             # 用户事件捕捉
             for event in pygame.event.get():
@@ -266,13 +267,7 @@ class GameLevel(Interface):
                         for position in self.__enemy_spawn_point:
                             if len(self.__entities.enemy_tanks) == self.__total_enemy_num:
                                 break
-                            enemy_tank = EnemyTank(enemy_tank_image_paths=self.__enemy_tank_images,
-                                                   appear_image_path=self.__other_images.get('appear'),
-                                                   position=position, border_len=self.__border_len,
-                                                   screensize=[self.__screen_width, self.__screen_height],
-                                                   bullet_image_paths=self.__bullet_images,
-                                                   food_image_paths=self.__food_images,
-                                                   boom_image_path=self.__other_images.get('boom_static'))
+                            enemy_tank = EnemyTank(position=position, game_instance=self._game_instance)
                             if (
                             not pygame.sprite.spritecollide(enemy_tank, self.__entities.enemy_tanks, False, None)) and (
                             not pygame.sprite.spritecollide(enemy_tank, self.__entities.player_tanks, False, None)):
@@ -315,34 +310,16 @@ class GameLevel(Interface):
         }
 
     def __init_tanks(self):
-        self.__tank_player1 = PlayerTank('player1', position=self.__player_spawn_point[0],
-                                         player_tank_image_paths=self.__player_tank_images,
-                                         border_len=self.__border_len,
-                                         screensize=[self.__screen_width, self.__screen_height],
-                                         bullet_image_paths=self.__bullet_images,
-                                         protected_mask_path=self.__other_images.get('protect'),
-                                         boom_image_path=self.__other_images.get('boom_static'))
+        self.__tank_player1 = PlayerTank('player1', position=self.__player_spawn_point[0], game_instance=self._game_instance)
         self.__entities.player_tanks.add(self.__tank_player1)
 
         self.__tank_player2 = None
         if self._game_instance.multiplayer_mode:
-            self.__tank_player2 = PlayerTank('player2', position=self.__player_spawn_point[1],
-                                             player_tank_image_paths=self.__player_tank_images,
-                                             border_len=self.__border_len,
-                                             screensize=[self.__screen_width, self.__screen_height],
-                                             bullet_image_paths=self.__bullet_images,
-                                             protected_mask_path=self.__other_images.get('protect'),
-                                             boom_image_path=self.__other_images.get('boom_static'))
+            self.__tank_player2 = PlayerTank('player2', position=self.__player_spawn_point[1], game_instance=self._game_instance)
             self.__entities.player_tanks.add(self.__tank_player2)
         # 敌方坦克
         for position in self.__enemy_spawn_point:
-            self.__entities.enemy_tanks.add(EnemyTank(enemy_tank_image_paths=self.__enemy_tank_images,
-                                                      appear_image_path=self.__other_images.get('appear'),
-                                                      position=position, border_len=self.__border_len,
-                                                      screensize=[self.__screen_width, self.__screen_height],
-                                                      bullet_image_paths=self.__bullet_images,
-                                                      food_image_paths=self.__food_images,
-                                                      boom_image_path=self.__other_images.get('boom_static')))
+            self.__entities.enemy_tanks.add(EnemyTank(position=position, game_instance=self._game_instance))
     def __init_home(self):
         self.__home = Home(position=self.__home_position, imagepaths=self.__home_images)
 
@@ -374,13 +351,13 @@ class GameLevel(Interface):
         color_white = (255, 255, 255)
         dynamic_text_tips = {
             16: {'text': 'Life: %s' % self.__tank_player1.num_lifes},
-            17: {'text': 'TLevel: %s' % self.__tank_player1.tanklevel},
+            17: {'text': 'TLevel: %s' % self.__tank_player1._level},
             23: {'text': 'Game Level: %s' % (self._game_instance.level + 1)},
             24: {'text': 'Remain Enemy: %s' % self.__total_enemy_num}
         }
         if self.__tank_player2:
             dynamic_text_tips[20] = {'text': 'Life: %s' % self.__tank_player2.num_lifes}
-            dynamic_text_tips[21] = {'text': 'TLevel: %s' % self.__tank_player2.tanklevel}
+            dynamic_text_tips[21] = {'text': 'TLevel: %s' % self.__tank_player2._level}
         else:
             dynamic_text_tips[20] = {'text': 'Life: %s' % None}
             dynamic_text_tips[21] = {'text': 'TLevel: %s' % None}
