@@ -45,11 +45,11 @@ class River(pygame.sprite.Sprite):
 
 class Tree(pygame.sprite.Sprite):
     # 树
-    def __init__(self, position, imagepath, **kwargs):
+    def __init__(self, position, imagefile, **kwargs):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface((24, 24))
         for i in range(2):
             for j in range(2):
-                self.image.blit(pygame.image.load(imagepath), (12 * i, 12 * j))
+                self.image.blit(pygame.image.load(imagefile), (12 * i, 12 * j))
         self.rect = self.image.get_rect()
         self.rect.left, self.rect.top = position

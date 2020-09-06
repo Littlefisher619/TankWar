@@ -140,29 +140,34 @@ class Tank(pygame.sprite.Sprite):
         if self._move_cache_count < self._move_cache_time:
             return
         self._move_cache_count = 0
-        speed = (self._direction.value[0] * self._speed, self._direction.value[1] * self._speed)
-        rect_ori = self.rect
-        self.rect = self.rect.move(speed)
+
+        new_position = (self._direction.value[0] * self._speed, self._direction.value[1] * self._speed)
+        old_rect = self.rect
+        self.rect = self.rect.move(new_position)
         # --碰到场景元素
         collisons = 0
         for key, value in scene_elems.items():
             if key in ['brick_group', 'iron_group', 'river_group']:
                 if pygame.sprite.spritecollide(self, value, False, None):
-                    self.rect = rect_ori
+                    self.rect = old_rect
                     collisons |= COLLISION.WITH_SCENE_ELEMENTS
             elif key in ['ice_group']:
                 if pygame.sprite.spritecollide(self, value, False, None):
-                    self.rect = self.rect.move(speed)
+                    self.rect = self.rect.move(new_position)
+
         # --碰到其他玩家坦克/碰到敌方坦克
         if pygame.sprite.spritecollide(self, player_tanks_group, False, None) or pygame.sprite.spritecollide(self, enemy_tanks_group, False, None):
             collisons |= COLLISION.WITH_TANK
-            self.rect = rect_ori
+            self.rect = old_rect
+
         # --碰到玩家大本营
         if pygame.sprite.collide_rect(self, home):
             collisons |= COLLISION.WITH_HOME
-            self.rect = rect_ori
+            self.rect = old_rect
 
         # --碰到边界
+        # self.rect.left = min(self._border_len, self.rect.left)
+
         if self.rect.left < self._border_len:
             self.rect.left = self._border_len
             collisons |= COLLISION.WITH_BORDER
