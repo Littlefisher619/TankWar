@@ -242,12 +242,12 @@ class GameLevel(Interface):
 
         self.__entities.player_bullets.draw(screen)
         self.__entities.enemy_bullets.draw(screen)
+        self.__entities.player_tanks.draw(screen)
         self.__entities.enemy_tanks.draw(screen)
+        for tank in self.__entities.player_tanks:
+            tank.draw(screen)
         for key, value in self.__scene_elements.items():
             value.draw(screen)
-        for tank in self.__entities.player_tanks:
-            tank.update()
-            tank.draw(screen)
         self.__home.draw(screen)
         self.__entities.foods.draw(screen)
         self.__draw_game_panel()
