@@ -46,8 +46,8 @@ class EntityGroup(object):
 
 class GameLevel(Interface):
     def _init_resources(self):
-        config = self._getGameInstance().getConfig()
-        self.__sounds = self._getGameInstance().getSounds()
+        config = self._game_config
+        self.__sounds = self._game_instance.sounds
         self.__scene_images = config.SCENE_IMAGE_PATHS
         self.__other_images = config.OTHER_IMAGE_PATHS
         self.__player_tank_images = config.PLAYER_TANK_IMAGE_PATHS
@@ -93,8 +93,8 @@ class GameLevel(Interface):
     '''开始游戏'''
 
     def _init_game_window(self):
-        self._getGameInstance().init_game_window(
-            (self._getGameConfig().WIDTH + self._getGameConfig().PANEL_WIDTH, self._getGameConfig().HEIGHT)
+        self._game_instance.init_game_window(
+            (self._game_config.WIDTH + self._game_config.PANEL_WIDTH, self._game_config.HEIGHT)
         )
 
     def __play_sound(self,sound):
@@ -128,7 +128,7 @@ class GameLevel(Interface):
         player_tank_list = []
         if self.__tank_player1.num_lifes >= 0:
             player_tank_list.append(self.__tank_player1)
-        if self._getGameInstance().getMultiPlayerMode() and (self.__tank_player1.num_lifes >= 0):
+        if self._game_instance.multiplayer_mode and (self.__tank_player1.num_lifes >= 0):
             player_tank_list.append(self.__tank_player2)
 
         for tank in player_tank_list:
@@ -234,7 +234,7 @@ class GameLevel(Interface):
             self.__play_sound('hit')
 
     def _draw_interface(self):
-        screen = self._getGameInstance().getScreen()
+        screen = self._game_screen
         screen.fill((0, 0, 0))
         screen.blit(self.__background_img, (0, 0))
 
@@ -243,8 +243,7 @@ class GameLevel(Interface):
         self.__entities.player_tanks.draw(screen)
         self.__entities.enemy_tanks.draw(screen)
         for key, value in self.__scene_elements.items():
-            if key not in ['ice_group', 'river_group']:
-                value.draw(screen)
+            value.draw(screen)
         self.__home.draw(screen)
         self.__entities.foods.draw(screen)
         self.__draw_game_panel()
@@ -252,6 +251,9 @@ class GameLevel(Interface):
 
     def _main_loop(self):
         clock = pygame.time.Clock()
+        # cheat for test
+        self.__tank_player1.improveTankLevel()
+        self.__tank_player1.improveTankLevel()
         while self.__has_next_loop:
             # 用户事件捕捉
             for event in pygame.event.get():
@@ -323,7 +325,7 @@ class GameLevel(Interface):
         self.__entities.player_tanks.add(self.__tank_player1)
 
         self.__tank_player2 = None
-        if self._getGameInstance().getMultiPlayerMode():
+        if self._game_instance.multiplayer_mode:
             self.__tank_player2 = PlayerTank('player2', position=self.__player_spawn_point[1],
                                              player_tank_image_paths=self.__player_tank_images,
                                              border_len=self.__border_len,
@@ -364,7 +366,7 @@ class GameLevel(Interface):
         self.__is_win_flag = False
         self.__has_next_loop = True
         self._main_loop()
-        self._getGameInstance().setIsWin(self.__is_win_flag)
+        self._game_instance.is_win = self.__is_win_flag
 
 
     '''显示游戏面板'''
@@ -373,7 +375,7 @@ class GameLevel(Interface):
         dynamic_text_tips = {
             16: {'text': 'Life: %s' % self.__tank_player1.num_lifes},
             17: {'text': 'TLevel: %s' % self.__tank_player1.tanklevel},
-            23: {'text': 'Game Level: %s' % (self._getGameInstance().getLevel() + 1)},
+            23: {'text': 'Game Level: %s' % (self._game_instance.level + 1)},
             24: {'text': 'Remain Enemy: %s' % self.__total_enemy_num}
         }
         if self.__tank_player2:
@@ -388,7 +390,7 @@ class GameLevel(Interface):
             tip['rect'] = tip['render'].get_rect()
             tip['rect'].left, tip['rect'].top = self.__screen_width + 5, self.__screen_height * pos / 30
 
-        screen = self._getGameScreen()
+        screen = self._game_screen
         for pos, tip in self.__fix_text_tips.items():
             screen.blit(tip['render'], tip['rect'])
         for pos, tip in dynamic_text_tips.items():
@@ -403,7 +405,7 @@ class GameLevel(Interface):
             'river_group': pygame.sprite.Group(),
             'tree_group': pygame.sprite.Group()
         }
-        f = open(self._getGameInstance().getLevelFile(), errors='ignore')
+        f = open(self._game_instance.level_file, errors='ignore')
         num_row = -1
         for line in f.readlines():
             line = line.strip('\n')
@@ -456,6 +458,7 @@ class GameLevel(Interface):
                     elif elem == 'I':
                         self.__scene_elements['iron_group'].add(Iron(position, self.__scene_images.get('iron')))
                     elif elem == 'R':
+                        print(position)
                         self.__scene_elements['river_group'].add(
                             River(position, self.__scene_images.get(random.choice(['river1', 'river2']))))
                     elif elem == 'C':

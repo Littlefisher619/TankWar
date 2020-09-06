@@ -16,75 +16,86 @@ class TankGame(object):
         self.__is_win = False
         self.__quit_game_flag = False
 
-    def getSounds(self):
+    @property
+    def sounds(self):
         return self.__sounds
 
-    def getScreen(self):
+    @property
+    def screen(self):
         return self.__screen
 
-    def setQuitGameFlag(self, quit_game_flag):
-        self.__quit_game_flag = quit_game_flag
-
-    def getQuitGameFlag(self):
+    @property
+    def quit_game_flag(self):
         return self.__quit_game_flag
 
-    def getConfig(self):
+    @quit_game_flag.setter
+    def quit_game_flag(self, quit_game_flag):
+        self.__quit_game_flag = quit_game_flag
+
+    @property
+    def config(self):
         return self.__config
 
-    def getLevel(self):
+    @property
+    def level(self):
         return self.__level
 
-    def getLevelFile(self):
+    @property
+    def level_file(self):
         return self.__levels[self.__level]
 
-    def getIsWin(self):
+    @property
+    def is_win(self):
         return self.__is_win
 
-    def setIsWin(self, is_win):
+    @is_win.setter
+    def is_win(self, is_win):
         self.__is_win = is_win
 
-    def setMultiplayerMode(self, multiplayer_mode):
-        self.__multiplayer_mode = multiplayer_mode
-
-    def getMultiPlayerMode(self):
+    @property
+    def multiplayer_mode(self):
         return self.__multiplayer_mode
 
-    def __showInterface(self, interface):
+    @multiplayer_mode.setter
+    def multiplayer_mode(self, multiplayer_mode):
+        self.__multiplayer_mode = multiplayer_mode
+
+    def __show_interface(self, interface):
         self.__interfaces[interface].show()
 
     def init_game_window(self, size_tuple=None):
         if size_tuple is None:
             self.__screen = pygame.display.set_mode(
-                (self.getConfig().WIDTH, self.getConfig().HEIGHT)
+                (self.config.WIDTH, self.config.HEIGHT)
             )
         else:
             self.__screen = pygame.display.set_mode(size_tuple)
 
     def __init_sounds(self):
-        for sound, file in self.getConfig().AUDIO_PATHS.items():
+        for sound, file in self.config.AUDIO_PATHS.items():
             self.__sounds[sound] = pygame.mixer.Sound(file)
             self.__sounds[sound].set_volume(1)
 
     def __load_levels(self):
         self.__levels = [
             os.path.join(
-                self.getConfig().LEVELFILEDIR,
+                self.config.LEVELFILEDIR,
                 filename
-            ) for filename in sorted(os.listdir(self.getConfig().LEVELFILEDIR))
+            ) for filename in sorted(os.listdir(self.config.LEVELFILEDIR))
         ]
 
     def __enter_loop(self):
-        self.__showInterface('GameStart')
+        self.__show_interface('GameStart')
         while True:
             for level in range(len(self.__levels)):
                 self.__level = level
-                self.__showInterface('SwitchLevel')
-                self.__showInterface('GameLevel')
-                if not self.getIsWin():
+                self.__show_interface('SwitchLevel')
+                self.__show_interface('GameLevel')
+                if not self.is_win:
                     break
 
-            self.__showInterface('GameOver')
-            if self.getQuitGameFlag():
+            self.__show_interface('GameOver')
+            if self.quit_game_flag:
                 break
 
     def __init_interfaces(self):
@@ -98,7 +109,7 @@ class TankGame(object):
     def __init_game(self):
         pygame.init()
         pygame.mixer.init()
-        pygame.display.set_caption(self.getConfig().TITLE)
+        pygame.display.set_caption(self.config.TITLE)
         self.init_game_window()
         self.__init_sounds()
         self.__load_levels()

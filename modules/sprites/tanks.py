@@ -73,6 +73,7 @@ class PlayerTank(pygame.sprite.Sprite):
 		for key, value in scene_elems.items():
 			if key in ['brick_group', 'iron_group', 'river_group']:
 				if pygame.sprite.spritecollide(self, value, False, None):
+					print(key, value)
 					self.rect = rect_ori
 			elif key in ['ice_group']:
 				if pygame.sprite.spritecollide(self, value, False, None):

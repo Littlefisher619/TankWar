@@ -6,7 +6,7 @@ from .Interface import Interface
 class GameOverInterface(Interface):
 
 	def _init_resources(self):
-		config = self._getGameConfig()
+		config = self._game_config
 		self.__background_img = pygame.image.load(config.OTHER_IMAGE_PATHS.get('background'))
 		self.__gameover_logo = pygame.image.load(config.OTHER_IMAGE_PATHS.get('gameover'))
 		self.__gameover_logo = pygame.transform.scale(self.__gameover_logo, (150, 75))
@@ -16,8 +16,8 @@ class GameOverInterface(Interface):
 		).convert_alpha().subsurface((0, 144), (48, 48))
 
 	def _init_text(self):
-		config = self._getGameConfig()
-		if self._getGameInstance().getIsWin():
+		config = self._game_config
+		if self._game_instance.is_win:
 			self.__font_render = self.__font.render('Congratulations, You win!', True, (255, 255, 255))
 		else:
 			self.__font_render = self.__font.render('Sorry, You fail!', True, (255, 0, 0))
@@ -29,12 +29,12 @@ class GameOverInterface(Interface):
 		self.__quit_render_red = self.__font.render('QUIT', True, (255, 0, 0))
 
 	def _init_logo(self):
-		config = self._getGameConfig()
+		config = self._game_config
 		self.__gameover_logo_rect = self.__gameover_logo.get_rect()
 		self.__gameover_logo_rect.midtop = config.WIDTH / 2, config.HEIGHT / 8
 
 	def _draw_interface(self):
-		screen = self._getGameScreen()
+		screen = self._game_screen
 		screen.blit(self.__background_img, (0, 0))
 
 		if self.__gameover_show_flag:
@@ -52,7 +52,7 @@ class GameOverInterface(Interface):
 			screen.blit(self.__quit_render_red, self.__quit_rect)
 
 	def _init_bottons(self):
-		config = self._getGameConfig()
+		config = self._game_config
 		self.__tank_rect = self.__tank_cursor.get_rect()
 		self.__restart_rect = self.__restart_render_white.get_rect()
 		self.__restart_rect.left, self.__restart_rect.top = config.WIDTH / 2.4, config.HEIGHT / 2
@@ -73,7 +73,7 @@ class GameOverInterface(Interface):
 					sys.exit()
 				elif event.type == pygame.KEYDOWN:
 					if event.key == pygame.K_RETURN:
-						self._getGameInstance().setQuitGameFlag(self.__is_quit_game)
+						self._game_instance.quit_game_flag = self.__is_quit_game
 						return
 					elif event.key in [pygame.K_UP, pygame.K_DOWN, pygame.K_w, pygame.K_s]:
 						self.__is_quit_game = not self.__is_quit_game

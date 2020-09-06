@@ -8,16 +8,19 @@ class Interface(object):
         self._init_logo()
 
     def _init_game_window(self):
-        self._getGameInstance().init_game_window()
+        self._game_instance.init_game_window()
 
-    def _getGameInstance(self):
+    @property
+    def _game_instance(self):
         return self.__game_instance
 
-    def _getGameScreen(self):
-        return self._getGameInstance().getScreen()
+    @property
+    def _game_screen(self):
+        return self._game_instance.screen
 
-    def _getGameConfig(self):
-        return self._getGameInstance().getConfig()
+    @property
+    def _game_config(self):
+        return self._game_instance.config
 
     def _init_resources(self):
         pass

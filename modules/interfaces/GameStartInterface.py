@@ -7,7 +7,7 @@ from .Interface import Interface
 class GameStartInterface(Interface):
 
 	def _init_resources(self):
-		config = self._getGameConfig()
+		config = self._game_config
 		self.__background_img = pygame.image.load(config.OTHER_IMAGE_PATHS.get('background'))
 		self.__font = pygame.font.Font(config.FONTPATH, config.WIDTH // 12)
 		self.__logo_img = pygame.image.load(config.OTHER_IMAGE_PATHS.get('logo'))
@@ -18,12 +18,12 @@ class GameStartInterface(Interface):
 
 	def _init_logo(self):
 		self.__logo_rect = self.__logo_img.get_rect()
-		self.__logo_rect.centerx, self.__logo_rect.centery = self._getGameConfig().WIDTH / 2, self._getGameConfig().HEIGHT // 4
+		self.__logo_rect.centerx, self.__logo_rect.centery = self._game_config.WIDTH / 2, self._game_config.HEIGHT // 4
 
 	def _init_text(self):
 		color_white = (255, 255, 255)
 		color_red = (255, 0, 0)
-		config = self._getGameConfig()
+		config = self._game_config
 		self.__player_render_white = self.__font.render('1 PLAYER', True, color_white)
 		self.__player_render_red = self.__font.render('1 PLAYER', True, color_red)
 		self.__players_render_white = self.__font.render('2 PLAYERS', True, color_white)
@@ -33,7 +33,7 @@ class GameStartInterface(Interface):
 		self.__game_tip_rect.centerx, self.__game_tip_rect.top = config.WIDTH / 2, config.HEIGHT / 1.4
 
 	def _init_bottons(self):
-		config = self._getGameConfig()
+		config = self._game_config
 		self.__player_rect = self.__player_render_white.get_rect()
 		self.__player_rect.left, self.__player_rect.top = config.WIDTH / 2.8, config.HEIGHT / 2.5
 		self.__players_rect = self.__players_render_white.get_rect()
@@ -41,7 +41,7 @@ class GameStartInterface(Interface):
 		self.__tank_rect = self.__tank_cursor.get_rect()
 
 	def _draw_interface(self):
-		screen = self._getGameScreen()
+		screen = self._game_screen
 		screen.blit(self.__background_img, (0, 0))
 		screen.blit(self.__logo_img, self.__logo_rect)
 		if self.__game_tip_show_flag:
@@ -69,7 +69,7 @@ class GameStartInterface(Interface):
 					sys.exit()
 				elif event.type == pygame.KEYDOWN:
 					if event.key == pygame.K_RETURN:
-						self._getGameInstance().setMultiplayerMode(self.__is_multiplayer_mode)
+						self._game_instance.multiplayer_mode = self.__is_multiplayer_mode
 						return
 					elif event.key == pygame.K_UP or event.key == pygame.K_DOWN or event.key == pygame.K_w or event.key == pygame.K_s:
 						self.__is_multiplayer_mode = not self.__is_multiplayer_mode
