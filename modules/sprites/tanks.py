@@ -166,8 +166,6 @@ class Tank(pygame.sprite.Sprite):
             self.rect = old_rect
 
         # --碰到边界
-        # self.rect.left = min(self._border_len, self.rect.left)
-
         if self.rect.left < self._border_len:
             self.rect.left = self._border_len
             collisons |= COLLISION.WITH_BORDER
@@ -318,9 +316,11 @@ class EnemyTank(Tank):
         self.is_keep_still = False
         self.keep_still_time = 500
         self.keep_still_count = 0
+
         # 坦克移动速度
         self._speed = 10 - int(self.__tank_type) * 2
 
+        self.__food = None
         # 坦克出场特效
         appear_image = pygame.image.load(self._game_config.OTHER_IMAGE_PATHS.get('appear')).convert_alpha()
         self.__appear_images = [
@@ -329,11 +329,9 @@ class EnemyTank(Tank):
             appear_image.subsurface((96, 0), (48, 48))
         ]
 
-        self.food = None
-
         if (random.random() >= 0.6) and (self._level == len(self._level_images) - 2):
             self._level += 1
-            self.food = Foods(food_image_paths=self._game_config.FOOD_IMAGE_PATHS, screensize=self._screen_size)
+            self.__food = Foods(food_image_paths=self._game_config.FOOD_IMAGE_PATHS, screensize=self._screen_size)
 
         # 坦克图片路径
         self._tank_image = pygame.image.load(self._level_images[self._level]).convert_alpha()
@@ -344,35 +342,44 @@ class EnemyTank(Tank):
         # 坦克爆炸图
 
     @property
+    def food(self):
+        return self.__food
+
+    def clear_food(self):
+        self.__food = None
+
+    @property
     def image(self):
         if self._is_borning:
             return self.__appear_images[(90 - self._borning_left_time // 10) % 3]
         return super().image
 
     def update(self, scene_elems, player_tanks_group, enemy_tanks_group, home):
-        data_return = dict()
         # 死后爆炸
+        remove_flag = False
+        bullet = None
         if self._booming_flag:
+
             self._boom_count += 1
-            data_return['boomed'] = False
             if self._boom_count > self._boom_last_time:
                 self._boom_count = 0
                 self._booming_flag = False
-                data_return['boomed'] = True
-            return data_return
+                remove_flag = True
+            return remove_flag, bullet
+
         # 禁止行动时不更新
         if self.is_keep_still:
             self.keep_still_count += 1
             if self.keep_still_count > self.keep_still_time:
                 self.is_keep_still = False
                 self.keep_still_count = 0
-            return data_return
+            return remove_flag, bullet
+
         # 播放出生特效
         if self._is_borning:
             self._borning_left_time -= 1
             if self._borning_left_time < 0:
                 self._is_borning = False
-
         # 出生后实时更新
         else:
             # --坦克移动
@@ -385,8 +392,8 @@ class EnemyTank(Tank):
                     self._bullet_cooling_count = 0
                     self._is_bullet_cooling = False
             # --能射击就射击
-            data_return['bullet'] = self.shoot()
-        return data_return
+            bullet = self.shoot()
+        return remove_flag, bullet
 
     def random_change_direction(self, exclude_current_direction=False):
         list = DIRECTION.list()

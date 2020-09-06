@@ -9,7 +9,7 @@ class GameStartInterface(Interface):
 	def _init_resources(self):
 		config = self._game_config
 		self.__background_img = pygame.image.load(config.OTHER_IMAGE_PATHS.get('background'))
-		self.__font = pygame.font.Font(config.FONTPATH, config.WIDTH // 12)
+		self.__font = pygame.font.Font(config.FONTPATH, config.WIDTH // 20)
 		self.__logo_img = pygame.image.load(config.OTHER_IMAGE_PATHS.get('logo'))
 		self.__logo_img = pygame.transform.scale(self.__logo_img, (446, 70))
 		self.__tank_cursor = pygame.image.load(

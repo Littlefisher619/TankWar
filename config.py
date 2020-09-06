@@ -1,7 +1,7 @@
 import os
 
 '''字体'''
-FONTPATH = os.path.join(os.getcwd(), 'resources/font/font.ttf')
+FONTPATH = os.path.join(os.getcwd(), 'resources/font/consola.ttf')
 '''图片'''
 BULLET_IMAGE_PATHS = {
     (0, -1): os.path.join(os.getcwd(), 'resources/images/bullet/bullet_up.png'),
@@ -81,7 +81,7 @@ WIDTH = 630
 HEIGHT = 630
 BORDER_LEN = 3
 GRID_SIZE = 24
-PANEL_WIDTH = 150
+PANEL_WIDTH = 170
 TITLE = '坦克大战'
 '''关卡'''
 LEVELFILEDIR = os.path.join(os.getcwd(), 'modules/levels')

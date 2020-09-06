@@ -9,6 +9,7 @@ from .interfaces.Interface import Interface
 
 from .sprites.tanks import DIRECTION
 
+
 class EntityGroup(object):
     def __init__(self):
         self.player_tanks = pygame.sprite.Group()
@@ -33,12 +34,13 @@ class EntityGroup(object):
         # 更新并画敌方坦克
         for tank in self.enemy_tanks:
             self.enemy_tanks.remove(tank)
-            data_return = tank.update(scene_elements, self.player_tanks,
-                                      self.enemy_tanks, home)
+            remove_flag, bullet = tank.update(
+                scene_elements, self.player_tanks, self.enemy_tanks, home
+            )
             self.enemy_tanks.add(tank)
-            if data_return.get('bullet'):
-                self.enemy_bullets.add(data_return.get('bullet'))
-            if data_return.get('boomed'):
+            if isinstance(bullet, Bullet):
+                self.enemy_bullets.add(bullet)
+            if remove_flag:
                 self.enemy_tanks.remove(tank)
         # 更新食物
         for food in self.foods:
@@ -52,12 +54,10 @@ class GameLevel(Interface):
         self.__scene_images = config.SCENE_IMAGE_PATHS
         self.__other_images = config.OTHER_IMAGE_PATHS
         self.__player_tank_images = config.PLAYER_TANK_IMAGE_PATHS
-        # self.__bullet_images = config.BULLET_IMAGE_PATHS
-        # self.__enemy_tank_images = config.ENEMY_TANK_IMAGE_PATHS
         self.__food_images = config.FOOD_IMAGE_PATHS
         self.__home_images = config.HOME_IMAGE_PATHS
         self.__background_img = pygame.image.load(self.__other_images.get('background'))
-        self.__font = pygame.font.Font(config.FONTPATH, config.HEIGHT // 30)
+        self.__font = pygame.font.Font(config.FONTPATH, config.HEIGHT // 35)
 
         self.__border_len = config.BORDER_LEN
         self.__grid_size = config.GRID_SIZE
@@ -210,7 +210,7 @@ class GameLevel(Interface):
             if collision_results['foreach_sprite'][tank]:
                 if tank.food:
                     self.__entities.foods.add(tank.food)
-                    tank.food = None
+                    tank.clear_food()
                 if tank.decrease_level():
                     self.__play_sound('bang')
                     self.__total_enemy_num -= 1
@@ -278,8 +278,8 @@ class GameLevel(Interface):
                                 self.__entities.enemy_tanks.add(enemy_tank)
             # --用户按键
             self.__dispatch_player_operation()
-            self.__dispatch_collisions()
             # 碰撞检测
+            self.__dispatch_collisions()
             self.__entities.update(self.__scene_elements, self.__home)
             self._draw_interface()
             # 我方坦克都挂了
@@ -354,17 +354,17 @@ class GameLevel(Interface):
     def __draw_game_panel(self):
         color_white = (255, 255, 255)
         dynamic_text_tips = {
-            16: {'text': 'Life: %s' % self.__tank_player1.num_lifes},
-            17: {'text': 'TLevel: %s' % self.__tank_player1._level},
+            16: {'text': 'Health: %s' % self.__tank_player1.num_lifes},
+            17: {'text': 'Level: %s' % self.__tank_player1._level},
             23: {'text': 'Game Level: %s' % (self._game_instance.level + 1)},
             24: {'text': 'Remain Enemy: %s' % self.__total_enemy_num}
         }
         if self.__tank_player2:
-            dynamic_text_tips[20] = {'text': 'Life: %s' % self.__tank_player2.num_lifes}
-            dynamic_text_tips[21] = {'text': 'TLevel: %s' % self.__tank_player2._level}
+            dynamic_text_tips[20] = {'text': 'Health: %s' % self.__tank_player2.num_lifes}
+            dynamic_text_tips[21] = {'text': 'Level: %s' % self.__tank_player2._level}
         else:
-            dynamic_text_tips[20] = {'text': 'Life: %s' % None}
-            dynamic_text_tips[21] = {'text': 'TLevel: %s' % None}
+            dynamic_text_tips[20] = {'text': 'Health: %s' % None}
+            dynamic_text_tips[21] = {'text': 'Level: %s' % None}
 
         for pos, tip in dynamic_text_tips.items():
             tip['render'] = self.__font.render(tip['text'], True, color_white)
@@ -402,47 +402,75 @@ class GameLevel(Interface):
             # 大本营位置
             elif line.startswith('%HOMEPOS'):
                 self.__home_position = line.split(':')[-1]
-                self.__home_position = [int(self.__home_position.split(',')[0]), int(self.__home_position.split(',')[1])]
-                self.__home_position = (self.__border_len + self.__home_position[0] * self.__grid_size,
-                                        self.__border_len + self.__home_position[1] * self.__grid_size)
+                self.__home_position = [
+                    int(self.__home_position.split(',')[0]), int(self.__home_position.split(',')[1])
+                ]
+                self.__home_position = (
+                    self.__border_len + self.__home_position[0] * self.__grid_size,
+                    self.__border_len + self.__home_position[1] * self.__grid_size
+                )
             # 大本营周围位置
             elif line.startswith('%HOMEAROUNDPOS'):
                 self.__home_walls_position = line.split(':')[-1]
-                self.__home_walls_position = [[int(pos.split(',')[0]), int(pos.split(',')[1])] for pos in
-                                              self.__home_walls_position.split(' ')]
                 self.__home_walls_position = [
-                    (self.__border_len + pos[0] * self.__grid_size, self.__border_len + pos[1] * self.__grid_size) for
-                    pos in self.__home_walls_position]
+                    [
+                        int(pos.split(',')[0]), int(pos.split(',')[1])
+                    ] for pos in self.__home_walls_position.split(' ')
+                ]
+                self.__home_walls_position = [
+                    (
+                        self.__border_len + pos[0] * self.__grid_size, self.__border_len + pos[1] * self.__grid_size
+                    ) for pos in self.__home_walls_position
+                ]
             # 我方坦克初始位置
             elif line.startswith('%PLAYERTANKPOS'):
                 self.__player_spawn_point = line.split(':')[-1]
-                self.__player_spawn_point = [[int(pos.split(',')[0]), int(pos.split(',')[1])] for pos in
-                                             self.__player_spawn_point.split(' ')]
                 self.__player_spawn_point = [
-                    (self.__border_len + pos[0] * self.__grid_size, self.__border_len + pos[1] * self.__grid_size) for
-                    pos in self.__player_spawn_point]
+                    [
+                        int(pos.split(',')[0]), int(pos.split(',')[1])
+                    ] for pos in self.__player_spawn_point.split(' ')
+                ]
+                self.__player_spawn_point = [
+                    (
+                        self.__border_len + pos[0] * self.__grid_size, self.__border_len + pos[1] * self.__grid_size
+                    ) for pos in self.__player_spawn_point
+                ]
             # 敌方坦克初始位置
             elif line.startswith('%ENEMYTANKPOS'):
                 self.__enemy_spawn_point = line.split(':')[-1]
-                self.__enemy_spawn_point = [[int(pos.split(',')[0]), int(pos.split(',')[1])] for pos in
-                                            self.__enemy_spawn_point.split(' ')]
                 self.__enemy_spawn_point = [
-                    (self.__border_len + pos[0] * self.__grid_size, self.__border_len + pos[1] * self.__grid_size) for
-                    pos in self.__enemy_spawn_point]
+                    [
+                        int(pos.split(',')[0]), int(pos.split(',')[1])
+                    ] for pos in self.__enemy_spawn_point.split(' ')
+                ]
+                self.__enemy_spawn_point = [
+                    (
+                        self.__border_len + pos[0] * self.__grid_size, self.__border_len + pos[1] * self.__grid_size
+                    ) for pos in self.__enemy_spawn_point
+                ]
             # 地图元素
             else:
                 num_row += 1
                 for num_col, elem in enumerate(line.split(' ')):
                     position = self.__border_len + num_col * self.__grid_size, self.__border_len + num_row * self.__grid_size
                     if elem == 'B':
-                        self.__scene_elements['brick_group'].add(Brick(position, self.__scene_images.get('brick')))
+                        self.__scene_elements['brick_group'].add(
+                            Brick(position, self.__scene_images.get('brick'))
+                        )
                     elif elem == 'I':
-                        self.__scene_elements['iron_group'].add(Iron(position, self.__scene_images.get('iron')))
+                        self.__scene_elements['iron_group'].add(
+                            Iron(position, self.__scene_images.get('iron'))
+                        )
                     elif elem == 'R':
                         print(position)
                         self.__scene_elements['river_group'].add(
-                            River(position, self.__scene_images.get(random.choice(['river1', 'river2']))))
+                            River(position, self.__scene_images.get(random.choice(['river1', 'river2'])))
+                        )
                     elif elem == 'C':
-                        self.__scene_elements['ice_group'].add(Ice(position, self.__scene_images.get('ice')))
+                        self.__scene_elements['ice_group'].add(
+                            Ice(position, self.__scene_images.get('ice'))
+                        )
                     elif elem == 'T':
-                        self.__scene_elements['tree_group'].add(Tree(position, self.__scene_images.get('tree')))
+                        self.__scene_elements['tree_group'].add(
+                            Tree(position, self.__scene_images.get('tree'))
+                        )
