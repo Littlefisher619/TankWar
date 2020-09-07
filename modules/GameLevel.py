@@ -8,6 +8,7 @@ from enum import Enum
 from .interfaces.Interface import Interface
 
 from .sprites.tanks import DIRECTION
+from pygame.sprite import spritecollide, groupcollide, collide_rect
 
 
 class SceneElementsGroup(object):
@@ -226,10 +227,10 @@ class GameLevel(Interface):
             'foreach_sprite': {},
         }
         for (collision, args) in self.__collisions['group'].items():
-            collision_results['group'][collision] = pygame.sprite.groupcollide(*args)
+            collision_results['group'][collision] = groupcollide(*args)
 
         for (collision, args) in self.__collisions['sprite'].items():
-            collision_results['sprite'][collision] = pygame.sprite.spritecollide(*args)
+            collision_results['sprite'][collision] = spritecollide(*args)
 
         for (collision, args) in self.__collisions['foreach_sprite'].items():
             arg_list = list(args)
@@ -237,16 +238,16 @@ class GameLevel(Interface):
             for sprite in sprite_list:
                 arg_list[0] = sprite
                 args = tuple(arg_list)
-                collision_results['foreach_sprite'][sprite] = pygame.sprite.spritecollide(*args)
+                collision_results['foreach_sprite'][sprite] = spritecollide(*args)
 
         for bullet in self.__entities.player_bullets:
-            collision_result = pygame.sprite.spritecollide(bullet, self.__scene_elements.iron_group, bullet.enhanced, None)
+            collision_result = spritecollide(bullet, self.__scene_elements.iron_group, bullet.enhanced, None)
             if collision_result:
                 self.__entities.player_bullets.remove(bullet)
 
         for player_tank in self.__entities.player_tanks:
             for food in self.__entities.foods:
-                collision_result = pygame.sprite.collide_rect(player_tank, food)
+                collision_result = collide_rect(player_tank, food)
                 if collision_result:
                     self.__dispatch_food_effect(food, player_tank)
 
@@ -311,8 +312,8 @@ class GameLevel(Interface):
                             if len(self.__entities.enemy_tanks) == self.__total_enemy_num:
                                 break
                             enemy_tank = self.__tank_factory.create_tank(position, TankFactory.ENEMY_TANK)
-                            if pygame.sprite.spritecollide(enemy_tank, self.__entities.enemy_tanks, False, None) or\
-                                pygame.sprite.spritecollide(enemy_tank, self.__entities.player_tanks, False, None):
+                            if spritecollide(enemy_tank, self.__entities.enemy_tanks, False, None) or\
+                                spritecollide(enemy_tank, self.__entities.player_tanks, False, None):
                                 del enemy_tank
                             else:
                                 self.__entities.enemy_tanks.add(enemy_tank)
@@ -425,11 +426,11 @@ class GameLevel(Interface):
         self.__scene_elements = SceneElementsGroup()
 
         elems_map = {
-            'B': ('brick_group', SceneFactory.BRICK),
-            'I': ('iron_group', SceneFactory.IRON),
-            'C': ('ice_group', SceneFactory.ICE),
-            'T': ('tree_group', SceneFactory.TREE),
-            'R': ('river_group', SceneFactory.RIVER_1)
+            'B': SceneFactory.BRICK,
+            'I': SceneFactory.IRON,
+            'C': SceneFactory.ICE,
+            'T': SceneFactory.TREE,
+            'R': SceneFactory.RIVER_1
         }
 
         home_walls_position = []
@@ -505,7 +506,7 @@ class GameLevel(Interface):
 
                     scene_element = None
                     if elem in elems_map:
-                        scene_element = self.__scene_factory.create_element(position, elems_map[elem][1])
+                        scene_element = self.__scene_factory.create_element(position, elems_map[elem])
                     elif elem == 'R':
                         scene_element = self.__scene_factory.create_element(
                             position, random.choice([SceneFactory.RIVER_1, SceneFactory.RIVER_2])

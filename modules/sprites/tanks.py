@@ -3,7 +3,7 @@ import random
 from .foods import Foods
 from .bullet import Bullet
 from enum import Enum
-
+from pygame.sprite import spritecollide
 
 class DIRECTION(Enum):
     UP = (0, -1)
@@ -148,15 +148,15 @@ class Tank(pygame.sprite.Sprite):
         collisons = 0
         cannot_passthrough = [scene_elems.brick_group, scene_elems.iron_group, scene_elems.river_group]
         for i in cannot_passthrough:
-            if pygame.sprite.spritecollide(self, i, False, None):
+            if spritecollide(self, i, False, None):
                 self.rect = old_rect
                 collisons |= COLLISION.WITH_SCENE_ELEMENTS
 
-        if pygame.sprite.spritecollide(self, scene_elems.ice_group, False, None):
+        if spritecollide(self, scene_elems.ice_group, False, None):
             self.rect = self.rect.move(new_position)
 
         # --碰到其他玩家坦克/碰到敌方坦克
-        if pygame.sprite.spritecollide(self, player_tanks_group, False, None) or pygame.sprite.spritecollide(self, enemy_tanks_group, False, None):
+        if spritecollide(self, player_tanks_group, False, None) or spritecollide(self, enemy_tanks_group, False, None):
             collisons |= COLLISION.WITH_TANK
             self.rect = old_rect
 

@@ -48,12 +48,14 @@ class SceneFactory(object):
     RIVER_1 = 'river1'
     RIVER_2 = 'river2'
     ICE = 'ice'
+    TREE = 'tree'
     SCENE_MAPS = {
         BRICK: Brick,
         IRON: Iron,
         RIVER_1: River,
         RIVER_2: River,
         ICE: Ice,
+        TREE: Tree,
     }
 
     def __init__(self, game_config):
