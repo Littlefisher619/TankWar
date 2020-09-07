@@ -171,9 +171,9 @@ class GameLevel(Interface):
 
         # 玩家一, WSAD移动, 空格键射击
         player_tank_list = []
-        if self.__tank_player1.num_lifes >= 0:
+        if self.__tank_player1.health >= 0:
             player_tank_list.append(self.__tank_player1)
-        if self._game_instance.multiplayer_mode and (self.__tank_player1.num_lifes >= 0):
+        if self._game_instance.multiplayer_mode and (self.__tank_player1.health >= 0):
             player_tank_list.append(self.__tank_player2)
 
         for tank in player_tank_list:
@@ -216,7 +216,7 @@ class GameLevel(Interface):
             player_tank.improve_level()
             player_tank.improve_level()
         elif food.type == Foods.TANK:
-            player_tank.add_life()
+            player_tank.add_health()
 
         self.__entities.foods.remove(food)
 
@@ -269,7 +269,7 @@ class GameLevel(Interface):
                 else:
                     if tank.decrease_level():
                         self.__play_sound('bang')
-                    if tank.num_lifes < 0:
+                    if tank.health < 0:
                         self.__entities.player_tanks.remove(tank)
 
         if collision_results['sprite']['PlayerBulletWithHome'] or collision_results['sprite']['EnemyBulletWithHome']:
@@ -398,13 +398,13 @@ class GameLevel(Interface):
     def __draw_game_panel(self):
         color_white = (255, 255, 255)
         dynamic_text_tips = {
-            16: {'text': 'Health: %s' % self.__tank_player1.num_lifes},
+            16: {'text': 'Health: %s' % self.__tank_player1.health},
             17: {'text': 'Level: %s' % self.__tank_player1._level},
             23: {'text': 'Game Level: %s' % (self._game_instance.level + 1)},
             24: {'text': 'Remain Enemy: %s' % self.__total_enemy_num}
         }
         if self.__tank_player2:
-            dynamic_text_tips[20] = {'text': 'Health: %s' % self.__tank_player2.num_lifes}
+            dynamic_text_tips[20] = {'text': 'Health: %s' % self.__tank_player2.health}
             dynamic_text_tips[21] = {'text': 'Level: %s' % self.__tank_player2._level}
         else:
             dynamic_text_tips[20] = {'text': 'Health: %s' % None}

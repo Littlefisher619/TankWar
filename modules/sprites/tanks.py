@@ -199,7 +199,7 @@ class PlayerTank(Tank):
         self.__protected_mask_flash_count = 0
         self.__protected_mask_pointer = False
         # 坦克生命数量
-        self.num_lifes = 3
+        self.health = 3
         # 重置
         self.__reborn()
 
@@ -242,13 +242,13 @@ class PlayerTank(Tank):
         # 降低坦克等级
         res = super().decrease_level()
         if self._level < 0:
-            self.num_lifes -= 1
+            self.health -= 1
 
         return res
 
-    def add_life(self):
+    def add_health(self):
         # 增加生命值
-        self.num_lifes += 1
+        self.health += 1
 
     @property
     def protected(self):
