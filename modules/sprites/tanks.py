@@ -146,14 +146,14 @@ class Tank(pygame.sprite.Sprite):
         self.rect = self.rect.move(new_position)
         # --碰到场景元素
         collisons = 0
-        for key, value in scene_elems.items():
-            if key in ['brick_group', 'iron_group', 'river_group']:
-                if pygame.sprite.spritecollide(self, value, False, None):
-                    self.rect = old_rect
-                    collisons |= COLLISION.WITH_SCENE_ELEMENTS
-            elif key in ['ice_group']:
-                if pygame.sprite.spritecollide(self, value, False, None):
-                    self.rect = self.rect.move(new_position)
+        cannot_passthrough = [scene_elems.brick_group, scene_elems.iron_group, scene_elems.river_group]
+        for i in cannot_passthrough:
+            if pygame.sprite.spritecollide(self, i, False, None):
+                self.rect = old_rect
+                collisons |= COLLISION.WITH_SCENE_ELEMENTS
+
+        if pygame.sprite.spritecollide(self, scene_elems.ice_group, False, None):
+            self.rect = self.rect.move(new_position)
 
         # --碰到其他玩家坦克/碰到敌方坦克
         if pygame.sprite.spritecollide(self, player_tanks_group, False, None) or pygame.sprite.spritecollide(self, enemy_tanks_group, False, None):
@@ -298,8 +298,8 @@ class PlayerTank(Tank):
 
 
 class EnemyTank(Tank):
-    def __init__(self, position, config, **kwargs):
-        super().__init__(game_config=config)
+    def __init__(self, position, game_config, **kwargs):
+        super().__init__(game_config=game_config)
         enemy_level_images = self._game_config.ENEMY_TANK_IMAGE_PATHS
         self.__tank_type = random.choice(list(enemy_level_images.keys()))
         self._level_images = enemy_level_images.get(self.__tank_type)
@@ -417,3 +417,21 @@ class EnemyTank(Tank):
 
     def set_still(self):
         self.is_keep_still = True
+
+
+class TankFactory(object):
+    ENEMY_TANK = 0
+    PLAYER1_TANK = 1
+    PLAYER2_TANK = 2
+
+    def __init__(self, config):
+        self.__game_config = config
+
+    def create_tank(self, position, tank_type):
+        if tank_type == TankFactory.ENEMY_TANK:
+            return EnemyTank(position=position, game_config=self.__game_config)
+        elif tank_type == TankFactory.PLAYER1_TANK:
+            return PlayerTank(name='player1', position=position, game_config=self.__game_config)
+        elif tank_type == TankFactory.PLAYER2_TANK:
+            return PlayerTank(name='player2', position=position, game_config=self.__game_config)
+

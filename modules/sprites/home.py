@@ -1,15 +1,15 @@
 import pygame
+from .scenes import SceneElement
 
 
-class Home(pygame.sprite.Sprite):
+class Home(SceneElement):
 	# 大本营
-	def __init__(self, position, imagefile, **kwargs):
-		pygame.sprite.Sprite.__init__(self)
-		self.imagefile = imagefile
-		self.image = pygame.image.load(self.imagefile[0])
-		self.rect = self.image.get_rect()
-		self.rect.left, self.rect.top = position
+	def __init__(self, position, imagefile, walls_position):
+		super().__init__(position, imagefile[0])
+		self.__destroyed_image = imagefile[1]
 		self.__destroyed = False
+		self.walls_position = walls_position
+
 
 	@property
 	def destroyed(self):
@@ -19,7 +19,7 @@ class Home(pygame.sprite.Sprite):
 	def destroyed(self, destroyed):
 		self.__destroyed = destroyed
 		if destroyed:
-			self.image = pygame.image.load(self.imagefile[1])
+			self.image = pygame.image.load(self.__destroyed_image)
 
 	def draw(self, screen):
 		screen.blit(self.image, self.rect)

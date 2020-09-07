@@ -10,6 +10,36 @@ from .interfaces.Interface import Interface
 from .sprites.tanks import DIRECTION
 
 
+class SceneElementsGroup(object):
+    def __init__(self):
+        self.ice_group = pygame.sprite.Group()
+        self.iron_group = pygame.sprite.Group()
+        self.brick_group = pygame.sprite.Group()
+        self.tree_group = pygame.sprite.Group()
+        self.river_group = pygame.sprite.Group()
+
+    def add(self, scene_element):
+        if isinstance(scene_element, Ice):
+            self.ice_group.add(scene_element)
+        elif isinstance(scene_element, Brick):
+            self.brick_group.add(scene_element)
+        elif isinstance(scene_element, Tree):
+            self.tree_group.add(scene_element)
+        elif isinstance(scene_element, River):
+            self.river_group.add(scene_element)
+        elif isinstance(scene_element, Iron):
+            self.iron_group.add(scene_element)
+
+    def draw(self, screen, layer):
+        if layer == 1:
+            self.ice_group.draw(screen)
+            self.river_group.draw(screen)
+        elif layer == 2:
+            self.brick_group.draw(screen)
+            self.iron_group.draw(screen)
+            self.tree_group.draw(screen)
+
+
 class EntityGroup(object):
     def __init__(self):
         self.player_tanks = pygame.sprite.Group()
@@ -18,6 +48,16 @@ class EntityGroup(object):
         self.enemy_bullets = pygame.sprite.Group()
         self.foods = pygame.sprite.Group()
 
+    def draw(self, screen, layer):
+        if layer == 1:
+            self.player_bullets.draw(screen)
+            self.enemy_bullets.draw(screen)
+            self.player_tanks.draw(screen)
+            for tank in self.player_tanks:
+                tank.draw(screen)
+            self.enemy_tanks.draw(screen)
+        elif layer == 2:
+            self.foods.draw(screen)
 
     def update(self, scene_elements, home):
         # 更新并画我方子弹
@@ -47,7 +87,9 @@ class EntityGroup(object):
             if food.update():
                 self.foods.remove(food)
 
+
 class GameLevel(Interface):
+
     def _init_resources(self):
         config = self._game_config
         self.__sounds = self._game_instance.sounds
@@ -63,8 +105,9 @@ class GameLevel(Interface):
         self.__grid_size = config.GRID_SIZE
         self.__screen_width, self.__screen_height = config.WIDTH, config.HEIGHT
         self.__panel_width = config.PANEL_WIDTH
-
-
+        self.__tank_factory = TankFactory(self._game_config)
+        self.__scene_factory = SceneFactory(self._game_config)
+        self.__scene_elements = None
 
     def _init_text(self):
         color_white = (255, 255, 255)
@@ -151,25 +194,27 @@ class GameLevel(Interface):
     def __dispatch_food_effect(self, food, player_tank):
         self.__play_sound('add')
 
-        if food.name == 'boom':
+        if food.type == Foods.BOOM:
             for _ in self.__entities.enemy_tanks:
                 self.__play_sound('bang')
             self.__total_enemy_num -= len(self.__entities.enemy_tanks)
             self.__entities.enemy_tanks = pygame.sprite.Group()
-        elif food.name == 'clock':
+        elif food.type == Foods.CLOCK:
             for enemy_tank in self.__entities.enemy_tanks:
                 enemy_tank.set_still()
-        elif food.name == 'gun':
+        elif food.type == Foods.GUN:
             player_tank.improve_level()
-        elif food.name == 'iron':
-            for x, y in self.__home_walls_position:
-                self.__scene_elements['iron_group'].add(Iron((x, y), self.__scene_images.get('iron')))
-        elif food.name == 'protect':
+        elif food.type == Foods.IRON:
+            for x, y in self.__home.walls_position:
+                self.__scene_elements.add(
+                    self.__scene_factory.create_element((x, y), SceneFactory.IRON)
+                )
+        elif food.type == Foods.PROTECT:
             player_tank.protected = True
-        elif food.name == 'star':
+        elif food.type == Foods.STAR:
             player_tank.improve_level()
             player_tank.improve_level()
-        elif food.name == 'tank':
+        elif food.type == Foods.TANK:
             player_tank.add_life()
 
         self.__entities.foods.remove(food)
@@ -195,7 +240,7 @@ class GameLevel(Interface):
                 collision_results['foreach_sprite'][sprite] = pygame.sprite.spritecollide(*args)
 
         for bullet in self.__entities.player_bullets:
-            collision_result = pygame.sprite.spritecollide(bullet, self.__scene_elements.get('iron_group'), bullet.enhanced, None)
+            collision_result = pygame.sprite.spritecollide(bullet, self.__scene_elements.iron_group, bullet.enhanced, None)
             if collision_result:
                 self.__entities.player_bullets.remove(bullet)
 
@@ -239,17 +284,11 @@ class GameLevel(Interface):
         screen = self._game_screen
         screen.fill((0, 0, 0))
         screen.blit(self.__background_img, (0, 0))
-
-        self.__entities.player_bullets.draw(screen)
-        self.__entities.enemy_bullets.draw(screen)
-        self.__entities.player_tanks.draw(screen)
-        self.__entities.enemy_tanks.draw(screen)
-        for tank in self.__entities.player_tanks:
-            tank.draw(screen)
-        for key, value in self.__scene_elements.items():
-            value.draw(screen)
+        self.__scene_elements.draw(screen, 1)
+        self.__entities.draw(screen, 1)
+        self.__scene_elements.draw(screen, 2)
         self.__home.draw(screen)
-        self.__entities.foods.draw(screen)
+        self.__entities.draw(screen, 2)
         self.__draw_game_panel()
         pygame.display.flip()
 
@@ -271,10 +310,11 @@ class GameLevel(Interface):
                         for position in self.__enemy_spawn_point:
                             if len(self.__entities.enemy_tanks) == self.__total_enemy_num:
                                 break
-                            enemy_tank = EnemyTank(position=position, config=self._game_config)
-                            if (
-                            not pygame.sprite.spritecollide(enemy_tank, self.__entities.enemy_tanks, False, None)) and (
-                            not pygame.sprite.spritecollide(enemy_tank, self.__entities.player_tanks, False, None)):
+                            enemy_tank = self.__tank_factory.create_tank(position, TankFactory.ENEMY_TANK)
+                            if pygame.sprite.spritecollide(enemy_tank, self.__entities.enemy_tanks, False, None) or\
+                                pygame.sprite.spritecollide(enemy_tank, self.__entities.player_tanks, False, None):
+                                del enemy_tank
+                            else:
                                 self.__entities.enemy_tanks.add(enemy_tank)
             # --用户按键
             self.__dispatch_player_operation()
@@ -296,11 +336,11 @@ class GameLevel(Interface):
     def __init_collision_config(self):
         self.__collisions = {
             'group': {
-                'PlayerBulletWithBrick': (self.__entities.player_bullets, self.__scene_elements.get('brick_group'), True, True),
-                'EnemyBulletWithBrick': (self.__entities.enemy_bullets, self.__scene_elements.get('brick_group'), True, True),
-                'EnemyBulletWithIron': (self.__entities.enemy_bullets, self.__scene_elements.get('iron_group'), True, False),
+                'PlayerBulletWithBrick': (self.__entities.player_bullets, self.__scene_elements.brick_group, True, True),
+                'EnemyBulletWithBrick': (self.__entities.enemy_bullets, self.__scene_elements.brick_group, True, True),
+                'EnemyBulletWithIron': (self.__entities.enemy_bullets, self.__scene_elements.iron_group, True, False),
                 'BulletWithBullet': (self.__entities.player_bullets, self.__entities.enemy_bullets, True, True),
-                'PlayerTankWithTree': (self.__entities.player_tanks, self.__scene_elements.get('tree_group'), False, False),
+                'PlayerTankWithTree': (self.__entities.player_tanks, self.__scene_elements.tree_group, False, False),
             },
             'sprite': {
                 'EnemyBulletWithHome': (self.__home, self.__entities.enemy_bullets, True, None),
@@ -314,19 +354,22 @@ class GameLevel(Interface):
         }
 
     def __init_tanks(self):
-        self.__tank_player1 = PlayerTank('player1', position=self.__player_spawn_point[0], game_config=self._game_config)
+        self.__tank_player1 = self.__tank_factory.create_tank(
+            self.__player_spawn_point[0], TankFactory.PLAYER1_TANK
+        )
         self.__entities.player_tanks.add(self.__tank_player1)
 
         self.__tank_player2 = None
         if self._game_instance.multiplayer_mode:
-            self.__tank_player2 = PlayerTank('player2', position=self.__player_spawn_point[1], game_config=self._game_config)
+            self.__tank_player2 = self.__tank_factory.create_tank(
+                self.__player_spawn_point[1], TankFactory.PLAYER2_TANK
+            )
             self.__entities.player_tanks.add(self.__tank_player2)
         # 敌方坦克
         for position in self.__enemy_spawn_point:
-            self.__entities.enemy_tanks.add(EnemyTank(position=position, config=self._game_config))
-
-    def __init_home(self):
-        self.__home = Home(position=self.__home_position, imagefile=self.__home_images)
+            self.__entities.enemy_tanks.add(
+                self.__tank_factory.create_tank(position, TankFactory.ENEMY_TANK)
+            )
 
     def __init_user_event(self):
         self.__generate_enemies_event = pygame.constants.USEREVENT
@@ -341,7 +384,6 @@ class GameLevel(Interface):
         self.__load_level_file()
         self.__init_entities()
         self.__init_user_event()
-        self.__init_home()
         self.__init_tanks()
         self.__init_collision_config()
         self.__play_sound('start')
@@ -380,13 +422,19 @@ class GameLevel(Interface):
 
 
     def __load_level_file(self):
-        self.__scene_elements = {
-            'brick_group': pygame.sprite.Group(),
-            'iron_group': pygame.sprite.Group(),
-            'ice_group': pygame.sprite.Group(),
-            'river_group': pygame.sprite.Group(),
-            'tree_group': pygame.sprite.Group()
+        self.__scene_elements = SceneElementsGroup()
+
+        elems_map = {
+            'B': ('brick_group', SceneFactory.BRICK),
+            'I': ('iron_group', SceneFactory.IRON),
+            'C': ('ice_group', SceneFactory.ICE),
+            'T': ('tree_group', SceneFactory.TREE),
+            'R': ('river_group', SceneFactory.RIVER_1)
         }
+
+        home_walls_position = []
+        home_position = ()
+
         f = open(self._game_instance.level_file, errors='ignore')
         num_row = -1
         for line in f.readlines():
@@ -402,26 +450,26 @@ class GameLevel(Interface):
                 self.max_enemy_num = int(line.split(':')[-1])
             # 大本营位置
             elif line.startswith('%HOMEPOS'):
-                self.__home_position = line.split(':')[-1]
-                self.__home_position = [
-                    int(self.__home_position.split(',')[0]), int(self.__home_position.split(',')[1])
+                home_position = line.split(':')[-1]
+                home_position = [
+                    int(home_position.split(',')[0]), int(home_position.split(',')[1])
                 ]
-                self.__home_position = (
-                    self.__border_len + self.__home_position[0] * self.__grid_size,
-                    self.__border_len + self.__home_position[1] * self.__grid_size
+                home_position = (
+                    self.__border_len + home_position[0] * self.__grid_size,
+                    self.__border_len + home_position[1] * self.__grid_size
                 )
             # 大本营周围位置
             elif line.startswith('%HOMEAROUNDPOS'):
-                self.__home_walls_position = line.split(':')[-1]
-                self.__home_walls_position = [
+                home_walls_position = line.split(':')[-1]
+                home_walls_position = [
                     [
                         int(pos.split(',')[0]), int(pos.split(',')[1])
-                    ] for pos in self.__home_walls_position.split(' ')
+                    ] for pos in home_walls_position.split(' ')
                 ]
-                self.__home_walls_position = [
+                home_walls_position = [
                     (
                         self.__border_len + pos[0] * self.__grid_size, self.__border_len + pos[1] * self.__grid_size
-                    ) for pos in self.__home_walls_position
+                    ) for pos in home_walls_position
                 ]
             # 我方坦克初始位置
             elif line.startswith('%PLAYERTANKPOS'):
@@ -454,23 +502,14 @@ class GameLevel(Interface):
                 num_row += 1
                 for num_col, elem in enumerate(line.split(' ')):
                     position = self.__border_len + num_col * self.__grid_size, self.__border_len + num_row * self.__grid_size
-                    if elem == 'B':
-                        self.__scene_elements['brick_group'].add(
-                            Brick(position, self.__scene_images.get('brick'))
-                        )
-                    elif elem == 'I':
-                        self.__scene_elements['iron_group'].add(
-                            Iron(position, self.__scene_images.get('iron'))
-                        )
+
+                    scene_element = None
+                    if elem in elems_map:
+                        scene_element = self.__scene_factory.create_element(position, elems_map[elem][1])
                     elif elem == 'R':
-                        self.__scene_elements['river_group'].add(
-                            River(position, self.__scene_images.get(random.choice(['river1', 'river2'])))
+                        scene_element = self.__scene_factory.create_element(
+                            position, random.choice([SceneFactory.RIVER_1, SceneFactory.RIVER_2])
                         )
-                    elif elem == 'C':
-                        self.__scene_elements['ice_group'].add(
-                            Ice(position, self.__scene_images.get('ice'))
-                        )
-                    elif elem == 'T':
-                        self.__scene_elements['tree_group'].add(
-                            Tree(position, self.__scene_images.get('tree'))
-                        )
+                    if scene_element is not None:
+                        self.__scene_elements.add(scene_element)
+        self.__home = Home(position=home_position, imagefile=self.__home_images, walls_position=home_walls_position)
