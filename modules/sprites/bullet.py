@@ -31,7 +31,7 @@ class Bullet(pygame.sprite.Sprite):
                     self.rect.left < self.border_len) or (self.rect.right > self.width)
 
     def kill(self):
-        # if not self.tank.infinity_bullet:
-        self.tank.bullet_count -= 1
+        if not self.tank.infinity_bullet:
+            self.tank.bullet_count -= 1
 
         super().kill()
