@@ -50,6 +50,8 @@ class Tank(pygame.sprite.Sprite):
         self._screen_size = [game_config.WIDTH, game_config.HEIGHT]
         self._init_resources()
 
+        self._bullet_count = 0
+
         self._bullet_config = {
             0: {
                 'speed': 8,
@@ -62,7 +64,8 @@ class Tank(pygame.sprite.Sprite):
             2: {
                 'speed': 10,
                 'enhanced': True
-            }
+            },
+            'count': 1
         }
 
     @property
