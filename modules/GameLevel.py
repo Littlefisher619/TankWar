@@ -64,11 +64,11 @@ class EntityGroup(object):
         # 更新并画我方子弹
         for bullet in self.player_bullets:
             if bullet.move():
-                self.player_bullets.remove(bullet)
+                bullet.kill()
         # 更新并画敌方子弹
         for bullet in self.enemy_bullets:
             if bullet.move():
-                self.enemy_bullets.remove(bullet)
+                bullet.kill()
         # 更新并画我方坦克
         for tank in self.player_tanks:
             tank.update()
@@ -243,7 +243,7 @@ class GameLevel(Interface):
         for bullet in self.__entities.player_bullets:
             collision_result = spritecollide(bullet, self.__scene_elements.iron_group, bullet.enhanced, None)
             if collision_result:
-                self.__entities.player_bullets.remove(bullet)
+                bullet.kill()
 
         for player_tank in self.__entities.player_tanks:
             for food in self.__entities.foods:
@@ -296,9 +296,9 @@ class GameLevel(Interface):
     def _main_loop(self):
         clock = pygame.time.Clock()
         # cheat for test
-        self.__tank_player1.improve_level()
-        self.__tank_player1.improve_level()
-        self.__tank_player1.protected = True
+        # self.__tank_player1.improve_level()
+        # self.__tank_player1.improve_level()
+        # self.__tank_player1.protected = True
         while self.__has_next_loop:
             # 用户事件捕捉
             for event in pygame.event.get():

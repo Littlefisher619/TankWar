@@ -50,8 +50,8 @@ class Tank(pygame.sprite.Sprite):
         self._screen_size = [game_config.WIDTH, game_config.HEIGHT]
         self._init_resources()
 
-        self._bullet_count = 0
-
+        self.bullet_count = 0
+        self._is_bullet_cooling = False
         self._bullet_config = {
             0: {
                 'speed': 8,
@@ -65,8 +65,17 @@ class Tank(pygame.sprite.Sprite):
                 'speed': 10,
                 'enhanced': True
             },
-            'count': 1
+            'count': 1,
+            'infinity': False
         }
+
+    @property
+    def infinity_bullet(self):
+        return self._bullet_config['infinity']
+
+    @property
+    def bullet_limit(self):
+        return self._bullet_config['count']
 
     @property
     def _game_config(self):
@@ -76,15 +85,22 @@ class Tank(pygame.sprite.Sprite):
         if self._booming_flag:
             return False
         if not self._is_bullet_cooling:
+            if not self.infinity_bullet:
+                if self.bullet_count >= self.bullet_limit:
+                    return False
+                else:
+                    self.bullet_count += 1
+
             self._is_bullet_cooling = True
             position = (self.rect.centerx + self._direction.value[0], self.rect.centery + self._direction.value[1])
-            bullet = Bullet(direction=self._direction, position=position, config=self._game_config)
+            bullet = Bullet(direction=self._direction, position=position, tank=self, config=self._game_config)
             configkey = self._level
             if configkey >= 2:
                 configkey = 2
             bullet.speed = self._bullet_config[configkey]['speed']
             bullet.enhanced = self._bullet_config[configkey]['enhanced']
             return bullet
+
         return False
 
     @property

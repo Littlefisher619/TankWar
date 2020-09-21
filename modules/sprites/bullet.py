@@ -7,7 +7,7 @@ import pygame
 class Bullet(pygame.sprite.Sprite):
     game_instance = None
 
-    def __init__(self, direction, position, config, enhanced=False, speed=8):
+    def __init__(self, direction, position, config, tank, enhanced=False, speed=8):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load(config.BULLET_IMAGE_PATHS.get(direction.value))
         self.width, self.height = config.WIDTH, config.HEIGHT
@@ -15,6 +15,7 @@ class Bullet(pygame.sprite.Sprite):
         self.direction = direction
         self.rect = self.image.get_rect()
         self.position = self.rect.center = position
+        self.tank = tank
 
         # 地图边缘宽度
 
@@ -28,3 +29,9 @@ class Bullet(pygame.sprite.Sprite):
         self.rect = self.rect.move(self.direction.value[0] * self.speed, self.direction.value[1] * self.speed)
         return (self.rect.top < self.border_len) or (self.rect.bottom > self.height) or (
                     self.rect.left < self.border_len) or (self.rect.right > self.width)
+
+    def kill(self):
+        # if not self.tank.infinity_bullet:
+        self.tank.bullet_count -= 1
+
+        super().kill()
