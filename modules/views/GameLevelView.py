@@ -1,13 +1,15 @@
 import sys
 import pygame
 import random
+
+from modules.TankGame import TankGame
 from modules.sprites.home import *
 from modules.sprites.tanks import *
 from modules.sprites.scenes import *
 from enum import Enum
-from .interfaces.Interface import Interface
+from modules.views.AbstractView import AbstractView
 
-from .sprites.tanks import DIRECTION
+from modules.sprites.tanks import DIRECTION
 from pygame.sprite import spritecollide, groupcollide, collide_rect
 
 
@@ -89,11 +91,11 @@ class EntityGroup(object):
                 self.foods.remove(food)
 
 
-class GameLevel(Interface):
+class GameLevelView(AbstractView):
 
     def _init_resources(self):
-        config = self._game_config
-        self.__sounds = self._game_instance.sounds
+        config = self.config
+        self.__sounds = TankGame().sounds
         self.__scene_images = config.SCENE_IMAGE_PATHS
         self.__other_images = config.OTHER_IMAGE_PATHS
         self.__player_tank_images = config.PLAYER_TANK_IMAGE_PATHS
@@ -106,8 +108,8 @@ class GameLevel(Interface):
         self.__grid_size = config.GRID_SIZE
         self.__screen_width, self.__screen_height = config.WIDTH, config.HEIGHT
         self.__panel_width = config.PANEL_WIDTH
-        self.__tank_factory = TankFactory(self._game_config)
-        self.__scene_factory = SceneFactory(self._game_config)
+        self.__tank_factory = TankFactory(self.config)
+        self.__scene_factory = SceneFactory(self.config)
         self.__scene_elements = None
 
     def _init_text(self):
@@ -138,8 +140,8 @@ class GameLevel(Interface):
     '''开始游戏'''
 
     def _init_game_window(self):
-        self._game_instance.init_game_window(
-            (self._game_config.WIDTH + self._game_config.PANEL_WIDTH, self._game_config.HEIGHT)
+        TankGame().init_game_window(
+            (self.config.WIDTH + self.config.PANEL_WIDTH, self.config.HEIGHT)
         )
 
     def __play_sound(self,sound):
@@ -173,7 +175,7 @@ class GameLevel(Interface):
         player_tank_list = []
         if self.__tank_player1.health >= 0:
             player_tank_list.append(self.__tank_player1)
-        if self._game_instance.multiplayer_mode and (self.__tank_player1.health >= 0):
+        if TankGame().multiplayer_mode and (self.__tank_player1.health >= 0):
             player_tank_list.append(self.__tank_player2)
 
         for tank in player_tank_list:
@@ -282,7 +284,7 @@ class GameLevel(Interface):
             self.__play_sound('hit')
 
     def _draw_interface(self):
-        screen = self._game_screen
+        screen = TankGame().screen
         screen.fill((0, 0, 0))
         screen.blit(self.__background_img, (0, 0))
         self.__scene_elements.draw(screen, 1)
@@ -361,7 +363,7 @@ class GameLevel(Interface):
         self.__entities.player_tanks.add(self.__tank_player1)
 
         self.__tank_player2 = None
-        if self._game_instance.multiplayer_mode:
+        if TankGame().multiplayer_mode:
             self.__tank_player2 = self.__tank_factory.create_tank(
                 self.__player_spawn_point[1], TankFactory.PLAYER2_TANK
             )
@@ -391,7 +393,7 @@ class GameLevel(Interface):
         self.__is_win_flag = False
         self.__has_next_loop = True
         self._main_loop()
-        self._game_instance.is_win = self.__is_win_flag
+        TankGame().is_win = self.__is_win_flag
 
 
     '''显示游戏面板'''
@@ -400,7 +402,7 @@ class GameLevel(Interface):
         dynamic_text_tips = {
             16: {'text': 'Health: %s' % self.__tank_player1.health},
             17: {'text': 'Level: %s' % self.__tank_player1._level},
-            23: {'text': 'Game Level: %s' % (self._game_instance.level + 1)},
+            23: {'text': 'Game Level: %s' % (TankGame().level + 1)},
             24: {'text': 'Remain Enemy: %s' % self.__total_enemy_num}
         }
         if self.__tank_player2:
@@ -415,7 +417,7 @@ class GameLevel(Interface):
             tip['rect'] = tip['render'].get_rect()
             tip['rect'].left, tip['rect'].top = self.__screen_width + 5, self.__screen_height * pos / 30
 
-        screen = self._game_screen
+        screen = TankGame().screen
         for pos, tip in self.__fix_text_tips.items():
             screen.blit(tip['render'], tip['rect'])
         for pos, tip in dynamic_text_tips.items():
@@ -436,7 +438,7 @@ class GameLevel(Interface):
         home_walls_position = []
         home_position = ()
 
-        f = open(self._game_instance.level_file, errors='ignore')
+        f = open(TankGame().level_file, errors='ignore')
         num_row = -1
         for line in f.readlines():
             line = line.strip('\n')

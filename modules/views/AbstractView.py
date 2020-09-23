@@ -1,26 +1,16 @@
 import pygame,sys
 
+from modules.TankGame import TankGame
 
-class Interface(object):
-    def __init__(self, game_instance):
-        self.__game_instance = game_instance
+
+class AbstractView(object):
+    def __init__(self):
         self._init_resources()
         self._init_logo()
 
-    def _init_game_window(self):
-        self._game_instance.init_game_window()
-
     @property
-    def _game_instance(self):
-        return self.__game_instance
-
-    @property
-    def _game_screen(self):
-        return self._game_instance.screen
-
-    @property
-    def _game_config(self):
-        return self._game_instance.config
+    def config(self):
+        return TankGame().config
 
     def _init_resources(self):
         pass
@@ -47,7 +37,7 @@ class Interface(object):
         pass
 
     def show(self):
-        self._init_game_window()
+        TankGame().init_game_window()
         self._init_text()
         self._init_bottons()
         self._main_loop()

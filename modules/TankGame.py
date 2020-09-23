@@ -1,20 +1,36 @@
+import threading
+
 import pygame
 import sys
 import os
-from .interfaces import *
-from .GameLevel import GameLevel
+
 
 
 class TankGame(object):
+    _instance_lock = threading.Lock()
+    _init_flag = False
 
-    def __init__(self, config):
-        self.__screen = None
-        self.__levels = None
-        self.__sounds = {}
-        self.__multiplayer_mode = False
-        self.__config = config
-        self.__is_win = False
-        self.__quit_game_flag = False
+    def __init__(self, config=None):
+        if not self._init_flag:
+            if not config:
+                raise Exception('Config was not specified while initializing game instance!')
+
+            self.__screen = None
+            self.__levels = None
+            self.__sounds = {}
+            self.__multiplayer_mode = False
+            self.__config = config
+            self.__is_win = False
+            self.__quit_game_flag = False
+            self._init_flag = True
+            self.__start()
+
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(TankGame, "_instance"):
+            with TankGame._instance_lock:
+                if not hasattr(TankGame, "_instance"):
+                    TankGame._instance = object.__new__(cls)
+        return TankGame._instance
 
     @property
     def sounds(self):
@@ -60,9 +76,6 @@ class TankGame(object):
     def multiplayer_mode(self, multiplayer_mode):
         self.__multiplayer_mode = multiplayer_mode
 
-    def __show_interface(self, interface):
-        self.__interfaces[interface].show()
-
     def init_game_window(self, size_tuple=None):
         if size_tuple is None:
             self.__screen = pygame.display.set_mode(
@@ -85,26 +98,19 @@ class TankGame(object):
         ]
 
     def __enter_loop(self):
-        self.__show_interface('GameStart')
+        from modules.views.ViewManager import ViewManager
+        ViewManager().show('GameStart')
         while True:
             for level in range(len(self.__levels)):
                 self.__level = level
-                self.__show_interface('SwitchLevel')
-                self.__show_interface('GameLevel')
+                ViewManager().show('SwitchLevel')
+                ViewManager().show('GameLevelView')
                 if not self.is_win:
                     break
 
-            self.__show_interface('GameOver')
+            ViewManager().show('GameOver')
             if self.quit_game_flag:
                 break
-
-    def __init_interfaces(self):
-        self.__interfaces = {
-            'SwitchLevel': SwitchLevelInterface(self),
-            'GameOver': GameOverInterface(self),
-            'GameStart': GameStartInterface(self),
-            'GameLevel': GameLevel(self),
-        }
 
     def __init_game(self):
         pygame.init()
@@ -114,10 +120,6 @@ class TankGame(object):
         self.__init_sounds()
         self.__load_levels()
 
-    def start(self):
+    def __start(self):
         self.__init_game()
-        self.__init_interfaces()
         self.__enter_loop()
-
-
-

@@ -1,13 +1,14 @@
 import sys
 import pygame
 
-from .Interface import Interface
+from modules.TankGame import TankGame
+from modules.views.AbstractView import AbstractView
 
 
-class SwitchLevelInterface(Interface):
+class SwitchLevelView(AbstractView):
 
 	def _init_resources(self):
-		config = self._game_config
+		config = self.config
 		self.__loadbar = pygame.image.load(config.OTHER_IMAGE_PATHS.get('loadbar')).convert_alpha()
 		self.__background_img = pygame.image.load(config.OTHER_IMAGE_PATHS.get('background'))
 		self.__logo_img = pygame.image.load(config.OTHER_IMAGE_PATHS.get('logo'))
@@ -18,9 +19,9 @@ class SwitchLevelInterface(Interface):
 		).convert_alpha().subsurface((0, 144), (48, 48))
 
 	def _init_text(self):
-		config = self._game_config
+		config = self.config
 		self.__font_render = self.__font.render(
-			'LEVEL%d' % (self._game_instance.level + 1),
+			'LEVEL%d' % (TankGame().level + 1),
 			True,
 			(255, 255, 255) # White
 		)
@@ -28,7 +29,7 @@ class SwitchLevelInterface(Interface):
 		self.__font_rect.centerx, self.__font_rect.centery = config.WIDTH / 2, config.HEIGHT / 2
 
 	def _init_loadbar(self):
-		config = self._game_config
+		config = self.config
 		self.__loadbar_rect = self.__loadbar.get_rect()
 		self.__loadbar_rect.centerx, self.__loadbar_rect.centery = config.WIDTH / 2, config.HEIGHT / 1.4
 		self.__tank_rect = self.__tank_cursor_img.get_rect()
@@ -37,10 +38,10 @@ class SwitchLevelInterface(Interface):
 
 	def _init_logo(self):
 		self.__logo_rect = self.__logo_img.get_rect()
-		self.__logo_rect.centerx, self.__logo_rect.centery = self._game_config.WIDTH / 2, self._game_config.HEIGHT // 4
+		self.__logo_rect.centerx, self.__logo_rect.centery = self.config.WIDTH / 2, self.config.HEIGHT // 4
 
 	def _draw_interface(self):
-		screen = self._game_screen
+		screen = TankGame().screen
 		screen.blit(self.__background_img, (0, 0))
 		screen.blit(self.__logo_img, self.__logo_rect)
 		screen.blit(self.__font_render, self.__font_rect)
