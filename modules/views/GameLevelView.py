@@ -1,94 +1,12 @@
 import sys
 import pygame
 import random
-
 from modules.TankGame import TankGame
-from modules.sprites.home import *
-from modules.sprites.tanks import *
-from modules.sprites.scenes import *
-from enum import Enum
+from modules.sprites import *
 from modules.views.AbstractView import AbstractView
 
 from modules.sprites.tanks import DIRECTION
 from pygame.sprite import spritecollide, groupcollide, collide_rect
-
-
-class SceneElementsGroup(object):
-    def __init__(self):
-        self.ice_group = pygame.sprite.Group()
-        self.iron_group = pygame.sprite.Group()
-        self.brick_group = pygame.sprite.Group()
-        self.tree_group = pygame.sprite.Group()
-        self.river_group = pygame.sprite.Group()
-
-    def add(self, scene_element):
-        if isinstance(scene_element, Ice):
-            self.ice_group.add(scene_element)
-        elif isinstance(scene_element, Brick):
-            self.brick_group.add(scene_element)
-        elif isinstance(scene_element, Tree):
-            self.tree_group.add(scene_element)
-        elif isinstance(scene_element, River):
-            self.river_group.add(scene_element)
-        elif isinstance(scene_element, Iron):
-            self.iron_group.add(scene_element)
-
-    def draw(self, screen, layer):
-        if layer == 1:
-            self.ice_group.draw(screen)
-            self.river_group.draw(screen)
-        elif layer == 2:
-            self.brick_group.draw(screen)
-            self.iron_group.draw(screen)
-            self.tree_group.draw(screen)
-
-
-class EntityGroup(object):
-    def __init__(self):
-        self.player_tanks = pygame.sprite.Group()
-        self.enemy_tanks = pygame.sprite.Group()
-        self.player_bullets = pygame.sprite.Group()
-        self.enemy_bullets = pygame.sprite.Group()
-        self.foods = pygame.sprite.Group()
-
-    def draw(self, screen, layer):
-        if layer == 1:
-            self.player_bullets.draw(screen)
-            self.enemy_bullets.draw(screen)
-            self.player_tanks.draw(screen)
-            for tank in self.player_tanks:
-                tank.draw(screen)
-            self.enemy_tanks.draw(screen)
-        elif layer == 2:
-            self.foods.draw(screen)
-
-    def update(self, scene_elements, home):
-        # 更新并画我方子弹
-        for bullet in self.player_bullets:
-            if bullet.move():
-                bullet.kill()
-        # 更新并画敌方子弹
-        for bullet in self.enemy_bullets:
-            if bullet.move():
-                bullet.kill()
-        # 更新并画我方坦克
-        for tank in self.player_tanks:
-            tank.update()
-        # 更新并画敌方坦克
-        for tank in self.enemy_tanks:
-            self.enemy_tanks.remove(tank)
-            remove_flag, bullet = tank.update(
-                scene_elements, self.player_tanks, self.enemy_tanks, home
-            )
-            self.enemy_tanks.add(tank)
-            if isinstance(bullet, Bullet):
-                self.enemy_bullets.add(bullet)
-            if remove_flag:
-                self.enemy_tanks.remove(tank)
-        # 更新食物
-        for food in self.foods:
-            if food.update():
-                self.foods.remove(food)
 
 
 class GameLevelView(AbstractView):
@@ -96,10 +14,7 @@ class GameLevelView(AbstractView):
     def _init_resources(self):
         config = self.config
         self.__sounds = TankGame().sounds
-        self.__scene_images = config.SCENE_IMAGE_PATHS
         self.__other_images = config.OTHER_IMAGE_PATHS
-        self.__player_tank_images = config.PLAYER_TANK_IMAGE_PATHS
-        self.__food_images = config.FOOD_IMAGE_PATHS
         self.__home_images = config.HOME_IMAGE_PATHS
         self.__background_img = pygame.image.load(self.__other_images.get('background'))
         self.__font = pygame.font.Font(config.FONTPATH, config.HEIGHT // 35)
@@ -138,13 +53,12 @@ class GameLevelView(AbstractView):
         pass
 
     '''开始游戏'''
-
     def _init_game_window(self):
         TankGame().init_game_window(
             (self.config.WIDTH + self.config.PANEL_WIDTH, self.config.HEIGHT)
         )
 
-    def __play_sound(self,sound):
+    def __play_sound(self, sound):
         self.__sounds[sound].play()
 
     def __dispatch_player_operation(self):
@@ -181,27 +95,27 @@ class GameLevelView(AbstractView):
         for tank in player_tank_list:
             for key, dir in key_maps['dir'][tank].items():
                 if key_pressed[key]:
-                    self.__entities.player_tanks.remove(tank)
+                    self.__entities.remove(tank)
                     tank.move(dir, self.__scene_elements, self.__entities.player_tanks,
                               self.__entities.enemy_tanks, self.__home)
                     tank.roll()
-                    self.__entities.player_tanks.add(tank)
+                    self.__entities.add(tank)
                     break
 
             if key_pressed[key_maps['fire'][tank]]:
                 bullet = tank.shoot()
                 if bullet:
                     self.__play_sound('fire') if tank._level < 2 else self.__play_sound('Gunfire')
-                    self.__entities.player_bullets.add(bullet)
+                    self.__entities.add(bullet)
 
-    def __dispatch_food_effect(self, food, player_tank):
+    def __dispatch_food_effect(self, food: Foods, player_tank: PlayerTank):
         self.__play_sound('add')
 
         if food.type == Foods.BOOM:
             for _ in self.__entities.enemy_tanks:
                 self.__play_sound('bang')
             self.__total_enemy_num -= len(self.__entities.enemy_tanks)
-            self.__entities.enemy_tanks = pygame.sprite.Group()
+            self.__entities.clear_enemy_tanks()
         elif food.type == Foods.CLOCK:
             for enemy_tank in self.__entities.enemy_tanks:
                 enemy_tank.set_still()
@@ -257,7 +171,7 @@ class GameLevelView(AbstractView):
         for tank in self.__entities.enemy_tanks:
             if collision_results['foreach_sprite'][tank]:
                 if tank.food:
-                    self.__entities.foods.add(tank.food)
+                    self.__entities.add(tank.food)
                     tank.clear_food()
                 if tank.decrease_level():
                     self.__play_sound('bang')
@@ -272,7 +186,7 @@ class GameLevelView(AbstractView):
                     if tank.decrease_level():
                         self.__play_sound('bang')
                     if tank.health < 0:
-                        self.__entities.player_tanks.remove(tank)
+                        self.__entities.remove(tank)
 
         if collision_results['sprite']['PlayerBulletWithHome'] or collision_results['sprite']['EnemyBulletWithHome']:
             self.__is_win_flag = False
@@ -318,7 +232,7 @@ class GameLevelView(AbstractView):
                                 spritecollide(enemy_tank, self.__entities.player_tanks, False, None):
                                 del enemy_tank
                             else:
-                                self.__entities.enemy_tanks.add(enemy_tank)
+                                self.__entities.add(enemy_tank)
             # --用户按键
             self.__dispatch_player_operation()
             # 碰撞检测
@@ -360,17 +274,17 @@ class GameLevelView(AbstractView):
         self.__tank_player1 = self.__tank_factory.create_tank(
             self.__player_spawn_point[0], TankFactory.PLAYER1_TANK
         )
-        self.__entities.player_tanks.add(self.__tank_player1)
+        self.__entities.add(self.__tank_player1)
 
         self.__tank_player2 = None
         if TankGame().multiplayer_mode:
             self.__tank_player2 = self.__tank_factory.create_tank(
                 self.__player_spawn_point[1], TankFactory.PLAYER2_TANK
             )
-            self.__entities.player_tanks.add(self.__tank_player2)
+            self.__entities.add(self.__tank_player2)
         # 敌方坦克
         for position in self.__enemy_spawn_point:
-            self.__entities.enemy_tanks.add(
+            self.__entities.add(
                 self.__tank_factory.create_tank(position, TankFactory.ENEMY_TANK)
             )
 
@@ -425,7 +339,7 @@ class GameLevelView(AbstractView):
 
 
     def __load_level_file(self):
-        self.__scene_elements = SceneElementsGroup()
+        self.__scene_elements = groups.SceneElementsGroup()
 
         elems_map = {
             'B': SceneFactory.BRICK,

@@ -1,6 +1,6 @@
 import threading
 
-from modules.views import GameStartView, GameOverView, GameLevelView, SwitchLevelView
+from modules.views import *
 
 
 class ViewManager(object):
@@ -22,7 +22,7 @@ class ViewManager(object):
                     ViewManager._instance = object.__new__(cls)
         return ViewManager._instance
 
-    def show(self, view):
+    def show(self, view: str):
         if view not in self.__views:
             raise Exception('View is not found!')
         else:

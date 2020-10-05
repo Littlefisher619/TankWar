@@ -98,7 +98,7 @@ class TankGame(object):
         ]
 
     def __enter_loop(self):
-        from modules.views.ViewManager import ViewManager
+        from modules.views import ViewManager
         ViewManager().show('GameStart')
         while True:
             for level in range(len(self.__levels)):

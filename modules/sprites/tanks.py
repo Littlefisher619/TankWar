@@ -1,9 +1,15 @@
 import pygame
 import random
-from .foods import Foods
-from .bullet import Bullet
+
+from modules.sprites import groups
+
+from modules.sprites.foods import Foods
+from modules.sprites.bullet import Bullet
 from enum import Enum
 from pygame.sprite import spritecollide
+
+
+
 
 class DIRECTION(Enum):
     UP = (0, -1)
