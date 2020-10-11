@@ -267,16 +267,16 @@ def __dispatch_collisions(self):
 
 ### Choose Multi-Player
 
-![image-20201011192950811](./Screenshots/gamestart.png)
+![gamestart](./Screenshots/gamestart.png)
 
 ### Loading a Level
 
-![image-20201011193138072](E:\Python\Projects\TankWar\Screenshots\gameload.png)
+![gameload](./Screenshots/gameload.png)
 
 ### Playing in a Level
 
-![image-20201011193440807](E:\Python\Projects\TankWar\Screenshots\level1.png)
+![level1](./Screenshots/level1.png)
 
 ### Game Over
 
-![image-20201011193409272](E:\Python\Projects\TankWar\Screenshots\gameover.png)
+![gameover](./Screenshots/gameover.png)
