@@ -5,7 +5,6 @@ import pygame
 
 
 class Bullet(pygame.sprite.Sprite):
-    game_instance = None
 
     def __init__(self, direction, position, config, tank, enhanced=False, speed=8):
         pygame.sprite.Sprite.__init__(self)
