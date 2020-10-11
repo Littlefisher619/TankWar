@@ -3,7 +3,7 @@ import threading
 import pygame
 import sys
 import os
-
+import random
 
 
 class TankGame(object):
@@ -23,6 +23,7 @@ class TankGame(object):
             self.__is_win = False
             self.__quit_game_flag = False
             self._init_flag = True
+            self.__last_level = None
             self.__start()
 
     def __new__(cls, *args, **kwargs):
@@ -58,7 +59,14 @@ class TankGame(object):
 
     @property
     def level_file(self):
-        return self.__levels[self.__level]
+
+        weights = [1] * len(self.__levels)
+        if self.__last_level is not None:
+            weights[self.__last_level] = 0
+
+        self.__last_level = random.choices(range(len(self.__levels)), weights=weights)[0]
+        return self.__levels[self.__last_level]
+        # return self.__levels[self.__level]
 
     @property
     def is_win(self):
@@ -89,7 +97,7 @@ class TankGame(object):
             self.__sounds[sound] = pygame.mixer.Sound(file)
             self.__sounds[sound].set_volume(1)
 
-    def __load_levels(self):
+    def __load_level_templates(self):
         self.__levels = [
             os.path.join(
                 self.config.LEVELFILEDIR,
@@ -100,17 +108,31 @@ class TankGame(object):
     def __enter_loop(self):
         from modules.views import ViewManager
         ViewManager().show('GameStart')
+        level = 0
         while True:
-            for level in range(len(self.__levels)):
-                self.__level = level
-                ViewManager().show('SwitchLevel')
-                ViewManager().show('GameLevelView')
-                if not self.is_win:
-                    break
-
-            ViewManager().show('GameOver')
+            self.__level = level
+            ViewManager().show('SwitchLevel')
+            ViewManager().show('GameLevelView')
+            if not self.is_win:
+                ViewManager().show('GameOver')
+                level = 0
+            else:
+                level += 1
             if self.quit_game_flag:
                 break
+
+
+        # while True:
+        #     for level in range(len(self.__levels)):
+        #         self.__level = level
+        #         ViewManager().show('SwitchLevel')
+        #         ViewManager().show('GameLevelView')
+        #         if not self.is_win:
+        #             break
+        #
+        #     ViewManager().show('GameOver')
+        #     if self.quit_game_flag:
+        #         break
 
     def __init_game(self):
         pygame.init()
@@ -118,7 +140,7 @@ class TankGame(object):
         pygame.display.set_caption(self.config.TITLE)
         self.init_game_window()
         self.__init_sounds()
-        self.__load_levels()
+        self.__load_level_templates()
 
     def __start(self):
         self.__init_game()

@@ -361,10 +361,10 @@ class GameLevelView(AbstractView):
                 continue
             # 敌方坦克总数量
             elif line.startswith('%TOTALENEMYNUM'):
-                self.__total_enemy_num = int(line.split(':')[-1])
+                self.__total_enemy_num = 1 + TankGame().level #int(line.split(':')[-1])
             # 场上敌方坦克最大数量
             elif line.startswith('%MAXENEMYNUM'):
-                self.max_enemy_num = int(line.split(':')[-1])
+                self.max_enemy_num = 6 + TankGame().level #int(line.split(':')[-1])
             # 大本营位置
             elif line.startswith('%HOMEPOS'):
                 home_position = line.split(':')[-1]

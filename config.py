@@ -10,22 +10,22 @@ BULLET_IMAGE_PATHS = {
     (1, 0): os.path.join(os.getcwd(), 'resources/images/bullet/bullet_right.png')
 }
 ENEMY_TANK_IMAGE_PATHS = {
-    '1': [os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_1_0.png'),
+    '0': [os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_1_0.png'),
           os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_1_1.png'),
           os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_1_2.png'),
           os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_1_3.png')],
-    '2': [os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_2_0.png'),
+    '1': [os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_2_0.png'),
           os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_2_1.png'),
           os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_2_2.png'),
           os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_2_3.png')],
-    '3': [os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_3_0.png'),
+    '2': [os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_3_0.png'),
           os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_3_1.png'),
           os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_3_2.png'),
           os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_3_3.png')],
-    '4': [os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_4_0.png'),
-          os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_4_1.png'),
-          os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_4_2.png'),
-          os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_4_3.png')]
+    # '3': [os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_4_0.png'),
+    #       os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_4_1.png'),
+    #       os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_4_2.png'),
+    #       os.path.join(os.getcwd(), 'resources/images/enemyTank/enemy_4_3.png')]
 }
 PLAYER_TANK_IMAGE_PATHS = {
     'player1': [os.path.join(os.getcwd(), 'resources/images/playerTank/tank_T1_0.png'),

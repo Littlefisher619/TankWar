@@ -1,6 +1,7 @@
 import pygame
 import random
 
+from modules.TankGame import TankGame
 from modules.sprites import groups
 
 from modules.sprites.foods import Foods
@@ -177,8 +178,7 @@ class Tank(pygame.sprite.Sprite):
                 self.rect = old_rect
                 collisons |= COLLISION.WITH_SCENE_ELEMENTS
 
-        if spritecollide(self, scene_elems.ice_group, False, None):
-            self.rect = self.rect.move(new_position)
+
 
         # --碰到其他玩家坦克/碰到敌方坦克
         if spritecollide(self, player_tanks_group, False, None) or spritecollide(self, enemy_tanks_group, False, None):
@@ -203,6 +203,9 @@ class Tank(pygame.sprite.Sprite):
         elif self.rect.bottom > self._screen_size[1] - self._border_len:
             collisons |= COLLISION.WITH_BORDER
             self.rect.bottom = self._screen_size[1] - self._border_len
+
+        if collisons == 0 and spritecollide(self, scene_elems.ice_group, False, None):
+            self.rect = self.rect.move(new_position)
 
         return collisons
 
@@ -326,10 +329,11 @@ class EnemyTank(Tank):
     def __init__(self, position, game_config, **kwargs):
         super().__init__(game_config=game_config)
         enemy_level_images = self._game_config.ENEMY_TANK_IMAGE_PATHS
-        self.__tank_type = random.choice(list(enemy_level_images.keys()))
+        self.__tank_type =  random.choices(['0', '1', '2'], weights=[10, 10, TankGame().level+10])[0]#random.choice(list(enemy_level_images.keys()))
         self._level_images = enemy_level_images.get(self.__tank_type)
         self._bullet_config[2]['enhanced'] = False
-        self._level = random.randint(0, len(self._level_images) - 2)
+
+        self._level = int(self.__tank_type) #random.randint(0, len(self._level_images) - 2)
         # 子弹冷却时间
         self._bullet_cooling_time = 120 - self._level * 10
         self._bullet_cooling_count = 0
@@ -342,8 +346,8 @@ class EnemyTank(Tank):
         self.keep_still_time = 500
         self.keep_still_count = 0
 
-        # 坦克移动速度
-        self._speed = 10 - int(self.__tank_type) * 2
+        # 坦克移动速度，等级越高速度越低
+        self._speed = 10 - self._level * 3
 
         self.__food = None
         # 坦克出场特效
@@ -353,9 +357,9 @@ class EnemyTank(Tank):
             appear_image.subsurface((48, 0), (48, 48)),
             appear_image.subsurface((96, 0), (48, 48))
         ]
-
-        if (random.random() >= 0.6) and (self._level == len(self._level_images) - 2):
-            self._level += 1
+        if random.random() <= 0.3 * self._level:
+        # if (random.random() >= 0.6) and (self._level == len(self._level_images) - 2):
+            # self._level += 1
             self.__food = Foods(food_image_paths=self._game_config.FOOD_IMAGE_PATHS, screensize=self._screen_size)
 
         # 坦克图片路径
