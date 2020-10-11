@@ -2,7 +2,7 @@
 
 坦克大战(TankWar)游戏是1990经典版的坦克大战的复刻，使用PyGame框架、结合面向对象程序设计的方法来重构，不仅游戏的玩法功能完成了全部的作业要求，它还具有一定的可扩展性。额外支持了双人模式和一些更多的场景元素，支持为每个类型的坦克设定最大子弹上限和子弹飞行速度。
 
-![image-20201011193548967](E:\Python\Projects\TankWar\Screenshots\main.png)
+![Main-Image](./Screenshots/main.png)
 
 ## Features
 
