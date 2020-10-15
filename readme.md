@@ -119,11 +119,11 @@ def _main_loop(self):
 
 坦克大战的关卡中将游戏中的所有“东西”分为了两个大类，分别是实体（子弹、坦克、道具）和场景元素（家、砖块、铁块、河流、草丛），而道具是拥有场景元素特性的实体，它虽然继承`SceneElement`，但属于实体，合成于`EntityGroup`
 
-`SceneElementGroup`使用了合成模式，合成了所有场景元素的聚集，提供统一的`add()`/`draw()`方法控制添加进哪个具体`pygame.sprite.Group`和绘制每类场景元素的聚集，而场景元素的创建需经`SceneFactory`工厂进行创建
+`SceneElementGroup`使用了类似于合成模式的设计，合成了所有场景元素的聚集，提供统一的`add()`/`draw()`方法控制添加进哪个具体`pygame.sprite.Group`和绘制每类场景元素的聚集，而场景元素的创建需经`SceneFactory`工厂进行创建
 
 ![UML_SceneElements](./UML/SceneElements.png)
 
-`EntityGroup`使用了适配器模式，与`SceneElementGroup`的功能类似，但若是创建坦克，则要经过`TankFactory`进行创建。提供统一的`add()`/`draw()`/`remove()`/`update()`方法控制实体聚集的创建/绘制/删除/更新、
+`EntityGroup`使用了类似于适配器模式的设计，与`SceneElementGroup`的功能类似，但若是创建坦克，则要经过`TankFactory`进行创建。提供统一的`add()`/`draw()`/`remove()`/`update()`方法控制实体聚集的创建/绘制/删除/更新、
 
 ![UML_Entities](./UML/Entities.png)
 
@@ -277,7 +277,25 @@ def __dispatch_collisions(self):
 
 
 
+### Class diagram
 
+![TankGame_With_Views](UML/clazz1.png)
+
+![SceneElementsGroup](UML/clazz2.png)
+
+![EntityGroup](UML/clazz3.png)
+
+![GameLevel](UML/clazz4.png)
+
+## Postscript
+
+在学习过了面向对象设计分析课程之后也了解了不少设计模式，虽然说拥有解决复杂工程项目的能力，但是目前依然欠缺一些应用能力，不能很好地利用所学的知识来组织复杂工程项目，项目依然存在可改进之处。
+
+从第一次commit到最后一次commit，历时一个多月的时间（真正开发的时间有100h+），将一个Github完全看上去组织地较乱的游戏工程项目改造成了一个具有面向对象设计思想的游戏，还是第一次尝试重构这样的项目。
+
+重构的过程需要不断地进行抽象、重新设计、并进行测试，需要检测游戏功能逻辑和原有项目之间是否一致，重构时出现bug是非常常见的事情，利用好测试以及版本差异比较工具解决重构产生的逻辑不一致也很重要，测试理想情况下是利用自动化单元测试，但是能力有限只进行了手动测试。
+
+参考项目：https://github.com/CharlesPikachu/Games/tree/master/Game5
 
 ## Screenshots
 
